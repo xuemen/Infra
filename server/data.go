@@ -19,6 +19,15 @@ type logbody struct {
 	Sig    string
 }
 
+type cfgbody struct {
+	COD    string
+	Tag    string
+	Index  int
+	Author string
+	Cfg    string
+	Sig    string
+}
+
 var Idx map[string]int
 
 func indexinit() {
@@ -41,19 +50,20 @@ func receive(w http.ResponseWriter, r *http.Request) {
 		var body logbody
 		buf.ReadFrom(r.Body)
 		yaml.Unmarshal(buf.Bytes(), &body)
-		log.Print(body)
-		log.Print(buf.String())
-
+		//log.Print(body)
+		//log.Print(buf.String())
 		_, ok := Idx[body.Tag]
 		if !ok {
 			Idx[body.Tag] = 0
 
 			fmt.Fprintf(w, "log notify: create a new tag [%s].", body.Tag)
+			log.Printf("log notify: create a new tag [%s].", body.Tag)
 		}
 
 		filename := fmt.Sprintf("log/%s.%s.%d.yaml", body.COD, body.Tag, Idx[body.Tag]+1)
 		if Exist(filename) {
 			fmt.Fprintf(w, "log fail: file [%s] exist.", filename)
+			log.Printf("log fail: file [%s] exist.", filename)
 		} else {
 			ioutil.WriteFile(filename, buf.Bytes(), 0644)
 
@@ -62,9 +72,25 @@ func receive(w http.ResponseWriter, r *http.Request) {
 			ioutil.WriteFile("index.yaml", d, 0644)
 
 			fmt.Fprintf(w, "log saved: file [%s].", filename)
+			log.Printf("log saved: file [%s].", filename)
 		}
 	} else if r.Method == "PUT" {
+		var buf bytes.Buffer
+		var body cfgbody
+		buf.ReadFrom(r.Body)
+		yaml.Unmarshal(buf.Bytes(), &body)
+		//log.Print(body)
+		//log.Print(buf.String())
 
+		filename := fmt.Sprintf("cfg/%s.%s.%d.yaml", body.COD, body.Tag, body.Index)
+		if Exist(filename) {
+			fmt.Fprintf(w, "cfg notify: file [%s] recover.", filename)
+			log.Printf("cfg notify: file [%s] recover.", filename)
+		} else {
+			fmt.Fprintf(w, "cfg notify: create file [%s].", filename)
+			log.Printf("cfg notify: create file [%s].", filename)
+		}
+		ioutil.WriteFile(filename, buf.Bytes(), 0644)
 	}
 }
 

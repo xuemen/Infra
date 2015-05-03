@@ -3,7 +3,8 @@ package main
 import ()
 
 func main() {
-	sendlog()
+	//postlog()
+	putcfg()
 }
 
 func checkErr(err error) {
