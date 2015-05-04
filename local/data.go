@@ -40,7 +40,7 @@ func postlog() {
 }
 
 func putcfg() {
-	newcfg := cfgbody{COD, "testtag", 1, "huangyg", "body", "sig"}
+	newcfg := cfgbody{"egonet", "testtag", -1, "huangyg", "body", "sig"}
 	body, _ := yaml.Marshal(&newcfg)
 	newcfg.Cfg = string(body)
 	body, _ = yaml.Marshal(&newcfg)

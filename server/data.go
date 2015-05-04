@@ -71,9 +71,9 @@ func receive(w http.ResponseWriter, r *http.Request) {
 
 		var filename string
 		if len(body.COD) == 0 {
-			filename = fmt.Sprintf("log/%s.%s.%d.yaml", body.Author, body.Tag, LogIdx[body.Tag]+1)
+			filename = fmt.Sprintf("log/%s.%s.%d.yaml", body.Tag, body.Author, LogIdx[body.Tag]+1)
 		} else {
-			filename = fmt.Sprintf("log/%s.%s.%s.%d.yaml", body.COD, body.Author, body.Tag, LogIdx[body.Tag]+1)
+			filename = fmt.Sprintf("log/%s.%s.%s.%d.yaml", body.COD, body.Tag, body.Author, LogIdx[body.Tag]+1)
 		}
 
 		if Exist(filename) {
@@ -98,9 +98,14 @@ func receive(w http.ResponseWriter, r *http.Request) {
 		//log.Print(buf.String())
 		var filename string
 		if len(body.COD) == 0 {
-			filename = fmt.Sprintf("cfg/%s.%s.%d.yaml", body.Author, body.Tag, body.Index)
+			filename = fmt.Sprintf("cfg/%s.%s", body.Tag, body.Author)
 		} else {
-			filename = fmt.Sprintf("cfg/%s.%s.%s.%d.yaml", body.COD, body.Author, body.Tag, body.Index)
+			filename = fmt.Sprintf("cfg/%s.%s.%s", body.COD, body.Tag, body.Author)
+		}
+		if body.Index == -1 {
+			filename = fmt.Sprintf("%s.yaml", filename)
+		} else {
+			filename = fmt.Sprintf("%s.%d.yaml", filename, body.Index)
 		}
 
 		if Exist(filename) {

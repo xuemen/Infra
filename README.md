@@ -22,17 +22,23 @@
 .
 ├── cfg
 |   ├── index.yaml
-|   ├── [cod.]author.tag.id.xxx
-|   ├── [cod.]author.tag.id.xxx
-|   └── [cod.]author.tag.id.xxx
+|   ├── [cod.]tag.author.[id.]xxx
+|   ├── [cod.]tag.author.[id.]xxx
+|   └── [cod.]tag.author.[id.]xxx
 └── log
     ├── index.yaml
-    ├── [cod.]author.tag.id.xxx
-    ├── [cod.]author.tag.id.xxx
-    └── [cod.]author.tag.id.xxx
+    ├── [cod.]tag.author.[id.]xxx
+    ├── [cod.]tag.author.[id.]xxx
+    └── [cod.]tag.author.[id.]xxx
 </pre>
 1. cod：共同体部署标识。
 2. author：提交者标识。
 3. tag：种类标识。
 4. id：唯一编号，通常是流水号。
 5. xxx：文件后缀，通常时yaml。
+
+###提交规则
+1. 个人cfg文件：
+	1. 部署者签名直接接受。
+	2. 先提交到testnet，根据testnet行为提取到正式cfg路径。
+2. 其它数据，由author签名即可接受。
