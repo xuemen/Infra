@@ -38,7 +38,9 @@
 5. xxx：文件后缀，通常时yaml。
 
 ###提交规则
-1. 个人cfg文件：
-	1. 部署者签名直接接受。
-	2. 先提交到testnet，根据testnet行为提取到正式cfg路径。
-2. 其它数据，由author签名即可接受。
+1. 没有全局部署者deployer.person.yaml时，只接受它。
+2. 接受全局部署者签名的全局成员memberid.person.yaml。
+3. 接受全局部署者签名的cod部署者cod.deployer.person.yaml。
+4. 接受cod部署者签名的cod成员cod.memberid.person.yaml。
+5. 接受testnet中表现良好的成员，具体规则待定。
+6. 其它数据，由合法author签名即可接受。
