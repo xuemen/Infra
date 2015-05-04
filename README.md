@@ -27,15 +27,19 @@
 |   └── [cod.]tag.author.[id.]xxx
 └── log
     ├── index.yaml
-    ├── [cod.]tag.author.[id.]xxx
-    ├── [cod.]tag.author.[id.]xxx
-    └── [cod.]tag.author.[id.]xxx
+    ├── [cod.]tag.author.id.xxx
+    ├── [cod.]tag.author.id.xxx
+    └── [cod.]tag.author.id.xxx
 </pre>
-1. cod：共同体部署标识。
-2. author：提交者标识。
-3. tag：种类标识。
-4. id：唯一编号，通常是流水号。
-5. xxx：文件后缀，通常时yaml。
+1. 文件格式：
+	1. cod：共同体部署标识。
+	2. author：提交者标识。
+	3. tag：种类标识。
+	4. id：唯一编号，通常是流水号。
+	5. xxx：文件后缀，通常时yaml。
+2. cfg文件夹：可以增、改。暂时不能删，可以设置失效标志。
+3. log文件夹：只增不删不该，
+
 
 ###提交规则
 1. 没有全局部署者deployer.person.yaml时，只接受它。

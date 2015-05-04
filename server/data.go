@@ -59,11 +59,16 @@ func receive(w http.ResponseWriter, r *http.Request) {
 		var body logbody
 		buf.ReadFrom(r.Body)
 		yaml.Unmarshal(buf.Bytes(), &body)
-		//log.Print(body)
-		//log.Print(buf.String())
-		_, ok := LogIdx[body.Tag]
+
+		var key string
+		if len(body.COD) == 0 {
+			key = fmt.Sprintf("%s.%s", body.Tag, body.Author)
+		} else {
+			key = fmt.Sprintf("%s.%s", body.COD, body.Tag)
+		}
+		_, ok := LogIdx[key]
 		if !ok {
-			LogIdx[body.Tag] = 0
+			LogIdx[key] = 0
 
 			fmt.Fprintf(w, "log notify: create a new tag [%s].", body.Tag)
 			log.Printf("log notify: create a new tag [%s].", body.Tag)
@@ -71,9 +76,9 @@ func receive(w http.ResponseWriter, r *http.Request) {
 
 		var filename string
 		if len(body.COD) == 0 {
-			filename = fmt.Sprintf("log/%s.%s.%d.yaml", body.Tag, body.Author, LogIdx[body.Tag]+1)
+			filename = fmt.Sprintf("log/%s.%s.%d.yaml", body.Tag, body.Author, LogIdx[key]+1)
 		} else {
-			filename = fmt.Sprintf("log/%s.%s.%s.%d.yaml", body.COD, body.Tag, body.Author, LogIdx[body.Tag]+1)
+			filename = fmt.Sprintf("log/%s.%s.%s.%d.yaml", body.COD, body.Tag, body.Author, LogIdx[key]+1)
 		}
 
 		if Exist(filename) {
@@ -82,7 +87,7 @@ func receive(w http.ResponseWriter, r *http.Request) {
 		} else {
 			ioutil.WriteFile(filename, buf.Bytes(), 0644)
 
-			LogIdx[body.Tag] = LogIdx[body.Tag] + 1
+			LogIdx[key] = LogIdx[key] + 1
 			d, _ := yaml.Marshal(&LogIdx)
 			ioutil.WriteFile("log/index.yaml", d, 0644)
 

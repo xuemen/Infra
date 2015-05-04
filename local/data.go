@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"gopkg.in/yaml.v2"
+	"io/ioutil"
 	"log"
 	"net/http"
 )
@@ -27,7 +28,7 @@ type cfgbody struct {
 var COD = "xuemen"
 
 func postlog() {
-	newlog := logbody{COD, "testtag", "huangyg", "body", "sig"}
+	newlog := logbody{"", "testtag", "huangyg", "body", "sig"}
 	body, _ := yaml.Marshal(&newlog)
 	newlog.Log = string(body)
 	body, _ = yaml.Marshal(&newlog)
@@ -35,7 +36,8 @@ func postlog() {
 	resp, err := http.Post("http://127.0.0.1:46372/data", "application/yaml", bytes.NewReader(body))
 	defer resp.Body.Close()
 	if err == nil {
-		log.Print(resp.Body)
+		rbody, _ := ioutil.ReadAll(resp.Body)
+		log.Print(string(rbody))
 	}
 }
 
@@ -53,7 +55,7 @@ func putcfg() {
 
 	defer resp.Body.Close()
 	if err == nil {
-		log.Print(resp)
-		log.Print(resp.Body)
+		rbody, _ := ioutil.ReadAll(resp.Body)
+		log.Print(string(rbody))
 	}
 }

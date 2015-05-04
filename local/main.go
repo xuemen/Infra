@@ -3,7 +3,7 @@ package main
 import ()
 
 func main() {
-	//postlog()
+	postlog()
 	putcfg()
 }
 
