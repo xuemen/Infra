@@ -70,8 +70,8 @@ func receive(w http.ResponseWriter, r *http.Request) {
 		if !ok {
 			LogIdx[key] = 0
 
-			fmt.Fprintf(w, "log notify: create a new tag [%s].", body.Tag)
-			log.Printf("log notify: create a new tag [%s].", body.Tag)
+			fmt.Fprintf(w, "log notify: create a new key [%s].\n", key)
+			log.Printf("log notify: create a new key [%s].\n", key)
 		}
 
 		var filename string
