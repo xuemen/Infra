@@ -8,19 +8,43 @@ var indexurl = "https://raw.githubusercontent.com/xuemen/Infra/master/server/COD
 var cod ;
 https.get(indexurl,function (response){
 	response.on('data',function(data){
-		cod = yaml.safeLoad(data);
+		cod = yaml.safeLoad(data.toString());
+		
+		for (var i in cod) {
+			//console.log(cod[i]);
+			
+			getevent(cod[i]);
+			emitter.emit("ticket2");
+		}
 	});
 });
 
-console.log(cod);
 
-for (var i in cod) {
-	console.log(cod[i]);
-	event = cod[i].event;
-	for (var id in event) {
-		console.log(id+event[id]);
-	}
+
+function getevent(cod){
+	var jsfile = cod.name+".js";
+	var codmodule ;
+	https.get(cod.codeurl,function (response){
+		response.on('data',function(data){
+			//console.log(data.toString());
+			
+			fs.writeFileSync(jsfile,data);
+			codmodule = require("./"+jsfile);
+			event = cod.event;
+			for (var id in event) {
+				console.log(id+"\t"+event[id]);
+				emitter.on(id,eval("codmodule."+event[id]));
+			}
+			
+			emitter.emit("ticket1");
+		});
+	});
+
+	
 }
+
+
+
 /*
 var ticket = require('./ticket')
 
