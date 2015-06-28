@@ -2,14 +2,17 @@ var https = require('https');
 var fs = require('fs');
 var events = require('events');
 var emitter = new events.EventEmitter();
+var yaml = require('js-yaml');
 
-var indexurl = "";
+var indexurl = "https://raw.githubusercontent.com/xuemen/Infra/master/server/COD.yaml";
 var cod ;
 https.get(indexurl,function (response){
 	response.on('data',function(data){
 		cod = yaml.safeLoad(data);
 	});
 });
+
+console.log(cod);
 
 for (var i in cod) {
 	console.log(cod[i]);
