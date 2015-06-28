@@ -4,3 +4,7 @@
 /server/npm
 /server/npm.cmd
 /server/node.exe
+/local/npm
+/local/npm.cmd
+/local/node_modules
+/local/node.exe
