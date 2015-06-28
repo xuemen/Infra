@@ -1,0 +1,6 @@
+/server/server.exe
+/local/local.exe
+/server/node_modules
+/server/npm
+/server/npm.cmd
+/server/node.exe

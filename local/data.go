@@ -28,7 +28,7 @@ type cfgbody struct {
 var COD = "xuemen"
 
 func postlog() {
-	newlog := logbody{"", "testtag", "huangyg", "body", "sig"}
+	newlog := logbody{"", "testtag", "huangyg", "bodybody", "sig"}
 	body, _ := yaml.Marshal(&newlog)
 	newlog.Log = string(body)
 	body, _ = yaml.Marshal(&newlog)
@@ -42,7 +42,7 @@ func postlog() {
 }
 
 func putcfg() {
-	newcfg := cfgbody{"egonet", "testtag", -1, "huangyg", "body", "sig"}
+	newcfg := cfgbody{"egonet", "testtag", -1, "huangyg", "cfgbody", "sig"}
 	body, _ := yaml.Marshal(&newcfg)
 	newcfg.Cfg = string(body)
 	body, _ = yaml.Marshal(&newcfg)

@@ -99,8 +99,7 @@ func receive(w http.ResponseWriter, r *http.Request) {
 		var body cfgbody
 		buf.ReadFrom(r.Body)
 		yaml.Unmarshal(buf.Bytes(), &body)
-		//log.Print(body)
-		//log.Print(buf.String())
+
 		var filename string
 		if len(body.COD) == 0 {
 			filename = fmt.Sprintf("cfg/%s.%s", body.Tag, body.Author)
