@@ -1,12 +1,13 @@
 var os = require('os');
 var child  =  require('child_process');
+var fs = require('fs');
 var events = require('events');
 var emitter = new events.EventEmitter();
 
 
 exports.t1 = t1;
 function t1(stream){
-	console.log(process.argv);
+	console.log(getHASH());
 	openbrowser("http://www.xuemen.com");
 }
 
@@ -34,4 +35,12 @@ function openbrowser(url) {
 		console.log("unsupported platform");
 		break;
 	};
+}
+
+function getHASH(){
+	var filename = process.argv[1];
+	var data = fs.readFileSync(filename);
+	var datahash = new Hashes.SHA512().b64(data.toString())
+	
+	return datahash;
 }
