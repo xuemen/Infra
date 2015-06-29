@@ -1,6 +1,6 @@
 - name: ITW
   codetype: 1
-  codeurl: https://raw.githubusercontent.com/xuemen/Infra/f41ed85f69a04f8cc26a3113d8f1faaa1ec0438d/server/ITW.js
+  codeurl: https://raw.githubusercontent.com/xuemen/Infra/42efec57bdd974de9e8dbbfd654b68e221b43f88/server/ITW.js
   event:
     ticket1: t1
     ticker2: t2
