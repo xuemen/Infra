@@ -1,6 +1,7 @@
 var os = require('os');
 var child  =  require('child_process');
 var fs = require('fs');
+var Hashes = require('jshashes');
 var events = require('events');
 var emitter = new events.EventEmitter();
 

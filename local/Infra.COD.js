@@ -37,7 +37,7 @@ function getevent(cod){
 			codmodule = require("./"+jsfile);
 			event = cod.event;
 			for (var id in event) {
-				console.log(id+"\t"+event[id]);
+				//console.log(id+"\t"+event[id]);
 				emitter.on(id,eval("codmodule."+event[id]));
 			}
 			
