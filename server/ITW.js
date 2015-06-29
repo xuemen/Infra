@@ -3,10 +3,10 @@ var child  =  require('child_process');
 var events = require('events');
 var emitter = new events.EventEmitter();
 
-console.log(process.argv);
 
 exports.t1 = t1;
 function t1(stream){
+	console.log(process.argv);
 	openbrowser("http://www.xuemen.com");
 }
 
