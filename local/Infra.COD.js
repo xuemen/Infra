@@ -1,8 +1,9 @@
 var https = require('https');
 var fs = require('fs');
+var yaml = require('js-yaml');
+var Hashes = require('jshashes');
 var events = require('events');
 var emitter = new events.EventEmitter();
-var yaml = require('js-yaml');
 
 var indexurl = "https://raw.githubusercontent.com/xuemen/Infra/master/server/COD.yaml";
 var cod ;
@@ -27,6 +28,10 @@ function getevent(cod){
 	https.get(cod.codeurl,function (response){
 		response.on('data',function(data){
 			//console.log(data.toString());
+			//var datahash = new Hashes.SHA512().b64(data);
+			//jsfile = datahsh+".js";
+			//console.log(new Hashes.SHA512().b64(data));
+			console.log(new Hashes.SHA512().b64(data.toString()));
 			
 			fs.writeFileSync(jsfile,data);
 			codmodule = require("./"+jsfile);
