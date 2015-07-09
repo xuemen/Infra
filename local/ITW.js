@@ -39,7 +39,7 @@ function openbrowser(url) {
 }
 
 function getHASH(){
-	var filename = process.argv[1];
+	var filename = "ITW.js";
 	var data = fs.readFileSync(filename);
 	var datahash = new Hashes.SHA512().b64(data.toString())
 	

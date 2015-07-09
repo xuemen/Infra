@@ -3,6 +3,8 @@ package main
 import (
 	"bytes"
 	"fmt"
+	"golang.org/x/crypto/openpgp"
+	"golang.org/x/crypto/openpgp/clearsign"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"log"
@@ -130,4 +132,38 @@ func receive(w http.ResponseWriter, r *http.Request) {
 func Exist(filename string) bool {
 	_, err := os.Stat(filename)
 	return err == nil || os.IsExist(err)
+}
+
+type Log struct {
+	Data     string
+	Hashtype int
+	Hash     string
+	Sigtype  int
+	Sig      string
+}
+
+func CheckSignedLog(logfile, pubkey string) {
+	var l logbody
+	file, _ := ioutil.ReadFile(logfile)
+	yaml.Unmarshal(file, &l)
+	var body Log
+	yaml.Unmarshal([]byte(l.Log), &body)
+	//log.Print(body.Sig)
+
+	b, _ := clearsign.Decode([]byte(body.Sig))
+	log.Print(b)
+	log.Print(b.Headers)
+	log.Print(string(b.Plaintext))
+	log.Print(string(b.Bytes))
+	log.Print(b.ArmoredSignature)
+
+	pubringFile, _ := os.Open(pubkey)
+	defer pubringFile.Close()
+	pubring, _ := openpgp.ReadArmoredKeyRing(pubringFile)
+	//theirPublicKey := getKeyByEmail(pubring, "huangyg@xuemen.com")
+	//log.Print(theirPublicKey)
+
+	key, err := openpgp.CheckDetachedSignature(pubring, bytes.NewReader(b.Bytes), b.ArmoredSignature.Body)
+	log.Print(key)
+	log.Print(err)
 }

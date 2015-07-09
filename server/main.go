@@ -30,6 +30,8 @@ func serveFile(pattern string, filename string) {
 }
 
 func main() {
+	CheckSignedLog("post/transfer.huangyg.1.yaml", "huangyg.pub")
+	return
 	indexinit()
 
 	http.HandleFunc("/", welcome)

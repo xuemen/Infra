@@ -102,7 +102,7 @@ var server = http.createServer(function (req, res) {
 	} 
 	if(req.method == 'GET') {
 		var pathname = url.parse(req.url).pathname;
-		var realPath = "data" + pathname;
+		var realPath = pathname;
 		console.log(realPath);
 		fs.exists(realPath, function (exists) {
 			if (!exists) {
