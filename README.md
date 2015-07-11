@@ -1,5 +1,5 @@
 ##Infra
-基础设施项目由协作网络、信任网络、联合提货权三部分组成。
+基础设施项目由协作网络、信任网络、联合提货权三部分组成，底层是去中心化的存储和事件驱动机制。
 
 
 ###体系架构
@@ -33,21 +33,49 @@ Infra项目从有中心方案启动，每当新方案的去中心化程度更高
 |   ├── [cod.]tag.author.[id.]xxx
 |   ├── [cod.]tag.author.[id.]xxx
 |   └── [cod.]tag.author.[id.]xxx
-└── post
+├── post
+|   ├── index.yaml
+|   ├── [cod.]tag.author.id.xxx
+|   ├── [cod.]tag.author.id.xxx
+|   └── [cod.]tag.author.id.xxx
+├── local
+|   ├── index.yaml
+|   ├── [cod.]tag.id.xxx
+|   ├── [cod.]tag.id.xxx
+|   └── [cod.]tag.id.xxx
+└── listener
     ├── index.yaml
-    ├── [cod.]tag.author.id.xxx
-    ├── [cod.]tag.author.id.xxx
-    └── [cod.]tag.author.id.xxx
+    ├── [cod.]tag.js
+    ├── [cod.]tag.js
+    └── [cod.]tag.js
 </pre>
 1. 文件格式：
 	1. cod：共同体部署标识。
 	2. author：提交者标识。
 	3. tag：种类标识。
-	4. id：cfg下任意自取，log下是自动取[cod.tag]或[tag.author]范围内唯一的自增数。
+	4. id：put下任意自取，post下是自动取[cod.tag]或[tag.author]范围内唯一的自增数。
 	5. xxx：文件后缀，通常时yaml。
 2. put文件夹：可以增、改。暂时不能删，可以设置失效标志。失效后不可重启。
+	1. 只能由原author修改。
 3. post文件夹：只增不删不改。
+4. listener文件夹：处理事件的代码。
 
+###http API
+1. POST | PUT ： 
+	1. 入口：http://url:port/xxx
+	2. 其中xxx是文件后缀
+2. GET：
+	1. 入口：http://url:port/post/cod.tag.author.xxx
+	2. 其中xxx是文件后缀
+
+###文件内容.yaml
+* cod
+* tag
+* author
+* id：PUT时可以指定
+* data： 数据（含数字签名）
+* signtype： 数字签名类型
+* remark: 备注
 
 ###提交规则
 1. 全局部署者的公钥与部署包一同发布，存放在根目录下\deployer.pubkey。
@@ -56,3 +84,15 @@ Infra项目从有中心方案启动，每当新方案的去中心化程度更高
 4. 接受cod部署者签名的cod成员cod.memberid.person.yaml。
 5. 接受testnet中表现良好的成员，具体规则待定。
 6. 其它数据，由合法author签名即可接受。
+
+###type
+* hashtype： 哈希算法类型
+	* 1:SHA512
+	* 2:SHA256
+* signtype： 数字签名类型
+	* 0: no sign | 没有签名
+	* 1: openpgp clear
+	* 2: openpgp detach
+- keytype: 密钥类型。
+	- 1:rsa
+	- 2:openpgp
