@@ -6,10 +6,84 @@ var yaml = require('js-yaml');
 
 var config = yaml.safeLoad(fs.readFileSync('config.yaml', 'utf8'));
 
-//infra.postsync();
-infra.updatebalance(askandtransfer);
-//askandtransfer();
+
+//infra.postsync(askandtransfer);
+infra.postsync(main);
 //createAuto();
+//askandtransfer();
+
+
+function main (){
+	console.log("1 创建普通账户\n2 创建自动账户\n3 转账\n4 同步数据\n5 退出");
+	var answer = readSyn();
+	console.log("answer=",answer);
+	switch (parseInt(answer)) {
+		case 1: createNor();
+		break;
+		case 2:createAuto();
+		break;
+		case 3:askandtransfer();
+		break;
+		case 4:infra.postsync();
+		break;
+		case 5:return;
+		break;
+		default:
+		break;
+		
+	}
+
+}
+
+exports.postfile = postfile ;
+exports.postupdate = postupdate ;
+
+function postfile() {
+	console.log("enter PSMD postfile");
+}
+
+function postupdate() {
+	console.log("enter PSMD postupdate");
+}
+
+
+function createCOD(){
+	process.stdin.setEncoding('utf8');
+	process.stdout.setEncoding('utf8');
+	var rl = readline.createInterface({
+	  input: process.stdin,
+	  output: process.stdout
+	});
+
+	var url,listener,author,name;
+
+	rl.question("请输入代码URL：\n", function(answer) {
+		url = answer;
+		listener = new Object();
+		listener["postfile"] = "postfile" ;
+		listener["postupdate"] = "postupdate" ;
+		
+		rl.question("COD名称：\n", function(answer) {
+			name = answer;
+			rl.question("创建者：\n", function(answer) {
+				author = answer;
+				rl.close();
+
+				infra.createCOD(url,listener,author,name,function(retstr){
+					console.log(retstr," 已创建.")
+				});
+			});
+		});
+	});
+}
+
+function readSyn() {  
+   process.stdin.pause();  
+   var response = fs.readSync(process.stdin.fd, 1000, 0, "utf8");  
+   process.stdin.resume();  
+   return response[0].trim();  
+}  
+
 
 function log(b){
 	console.log("PSMD log:\n",b);
@@ -36,7 +110,7 @@ function createNor(){
 					rl.close();
 
 					infra.createNor(name,id,email,passphrase,function(retstr){
-						console.log(retstr," 已创建.")
+						console.log(retstr," 已创建.");
 					});
 
 				});
@@ -62,7 +136,7 @@ function createAuto(){
 		listener["postfile"] = "postfile" ;
 		listener["postupdate"] = "postupdate" ;
 		
-		rl.question("备注(所属COD和账号户名)：\n", function(answer) {
+		rl.question("账号户名：\n", function(answer) {
 			name = answer;
 			rl.question("创建者：\n", function(answer) {
 				author = answer;
@@ -102,7 +176,11 @@ function askandtransfer(){
 				payer = fingerprint;
 			}
 		}
-		console.log('付款人完整ID：',payer);
+		if(payer == undefined){
+			console.log('没有这个账号。');
+			return;
+		}
+		console.log('付款人完整账号：',payer);
 		
 		console.log("可选的收款人:")
 		for (var key in pubuserinfo) {
@@ -113,6 +191,10 @@ function askandtransfer(){
 				if (fingerprint.indexOf(answer) == 0){
 					payee = fingerprint;
 				}
+			}
+			if(payee == undefined){
+				console.log('没有这个账号。');
+				return;
 			}
 			console.log('收款人完整账号：',payee);
 

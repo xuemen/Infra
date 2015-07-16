@@ -23,7 +23,7 @@ exports.transfer = transfer ;
 exports.postsync = postsync ;
 exports.putsync = putsync ;
 
-
+// coop net
 function getCODlist(){
 	
 }
@@ -32,6 +32,37 @@ function getCODObj(){
 	
 }
 
+function createCOD((url,listener,author,name,callback){
+	https.get(url,function (response){
+		response.on('data',function(js){
+			console.log(js.toString());
+			
+			var data = new Object();
+			data.name = name;
+			data.id = new Hashes.SHA512().b64(js.toString());
+			data.codetype = 1;
+			data.codeurl = url;
+			data.listener = listener;
+			data.createtime = new Date().getTime();
+			data.remark = name+".deploy";
+			
+			var item = new Object();
+	
+			item.cod = name;
+			item.tag = "deploy";
+			item.author = author;
+			item.data = data;
+			item.sigtype = 0;
+
+			sent(item,'POST',function (retstr){
+				if (typeof(callback) != "undefined") {
+					callback(retstr);
+				}
+			});
+		});
+		
+	});
+}
 // Joint Token
 var balance ;
 var secuserinfo ;
@@ -104,7 +135,7 @@ function createAuto(url,listener,author,name,callback){
 
 			sent(item,'POST',function (retstr){
 				if (typeof(callback) != "undefined") {
-					callback(balance);
+					callback(retstr);
 				}
 			});
 		});

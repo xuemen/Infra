@@ -79,6 +79,7 @@ Infra项目从有中心方案启动，每当新方案的去中心化程度更高
 <pre>
 .
 ├── deployer.pubkey
+├── config.yaml
 ├── put
 |   ├── index.yaml
 |   ├── [cod.]tag.author.[id.]xxx
