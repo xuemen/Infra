@@ -6,11 +6,75 @@ var yaml = require('js-yaml');
 
 var config = yaml.safeLoad(fs.readFileSync('config.yaml', 'utf8'));
 
-//infra.postsync(log);
-//infra.emitter.emit("postsync",log);
+//infra.postsync();
+//infra.updatebalance(askandtransfer);
+//askandtransfer();
+createAuto();
 
-infra.updatebalance(askandtransfer);
+function log(b){
+	console.log("PSMD log:\n",b);
+};
 
+function createNor(){
+	process.stdin.setEncoding('utf8');
+	process.stdout.setEncoding('utf8');
+	var rl = readline.createInterface({
+	  input: process.stdin,
+	  output: process.stdout
+	});
+
+	var name,id,email,passphrase;
+
+	rl.question("请输入姓名：\n", function(answer) {
+		name = answer;
+		rl.question("请输入id(英文和字母组成)：\n", function(answer) {
+			id = answer;
+			rl.question("请输入Email地址：\n", function(answer) {
+				email = answer;
+				rl.question("请输入私钥保护口令(以后经常使用，请务必记住，但不能告诉任何人。)：\n", function(answer) {
+					passphrase = answer;
+					rl.close();
+
+					infra.createNor(name,id,email,passphrase,function(retstr){
+						console.log(retstr," 已创建.")
+					});
+
+				});
+			});
+		});
+	});
+}
+
+
+function createAuto(){
+	process.stdin.setEncoding('utf8');
+	process.stdout.setEncoding('utf8');
+	var rl = readline.createInterface({
+	  input: process.stdin,
+	  output: process.stdout
+	});
+
+	var url,listener,author,name;
+
+	rl.question("请输入代码URL：\n", function(answer) {
+		url = answer;
+		listener = new Object();
+		listener["month"] = "month" ;
+		listener["year"] = "year" ;
+		
+		rl.question("备注(所属COD和账号户名)：\n", function(answer) {
+			name = answer;
+			rl.question("创建者：\n", function(answer) {
+				author = answer;
+				rl.close();
+
+				infra.createAuto(url,listener,author,name,function(retstr){
+					console.log(retstr," 已创建.")
+				});
+			});
+		});
+	});
+}
 
 function askandtransfer(){
 	var secuserinfo = infra.secuserinfo;
@@ -72,42 +136,6 @@ function askandtransfer(){
 						infra.transfer(payer,payee,amount,passphrase);
 					});
 				}
-			});
-		});
-	});
-}
-
-
-
-function log(b){
-	console.log("PSMD log:\n",b);
-};
-
-function createNor(){
-	process.stdin.setEncoding('utf8');
-	process.stdout.setEncoding('utf8');
-	var rl = readline.createInterface({
-	  input: process.stdin,
-	  output: process.stdout
-	});
-
-	var name,id,email,passphrase;
-
-	rl.question("请输入姓名：\n", function(answer) {
-		name = answer;
-		rl.question("请输入id(英文和字母组成)：\n", function(answer) {
-			id = answer;
-			rl.question("请输入Email地址：\n", function(answer) {
-				email = answer;
-				rl.question("请输入私钥保护口令(以后经常使用，请务必记住，但不能告诉任何人。)：\n", function(answer) {
-					passphrase = answer;
-					rl.close();
-
-					infra.createNor(name,id,email,passphrase,function(retstr){
-						console.log(retstr," 已创建.")
-					});
-
-				});
 			});
 		});
 	});

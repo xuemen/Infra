@@ -4,6 +4,7 @@ var http = require('http');
 var https = require('https');
 var async = require('async');
 var openpgp = require('openpgp');
+var Hashes = require('jshashes');
 var events = require('events');
 
 var emitter = new events.EventEmitter();
@@ -15,6 +16,7 @@ exports.getCODlist = getCODlist ;
 exports.getCODObj = getCODObj ;
 
 exports.createNor = createNor ;
+exports.createAuto = createAuto ;
 exports.updatebalance = updatebalance ;
 exports.transfer = transfer ;
 
@@ -72,8 +74,41 @@ function createNor(name,id,email,passphrase,callback){
 			fs.writeFileSync(retstr+".pub",key.publicKeyArmored);
 			fs.writeFileSync(retstr+".sec",key.privateKeyArmored);
 			
-			callback(retstr);
+			if (typeof(callback) != "undefined") {
+				callback(balance);
+			}
 		});
+	});
+}
+
+function createAuto(url,listener,author,name,callback){
+	https.get(url,function (response){
+		response.on('data',function(js){
+			console.log(js.toString());
+			
+			var data = new Object();
+			data.id = new Hashes.SHA512().b64(js.toString());
+			data.codetype = 1;
+			data.codeurl = url;
+			data.listener = listener;
+			data.createtime = new Date().getTime();
+			data.remark = name+".auto";
+			
+			var item = new Object();
+	
+			item.cod = name;
+			item.tag = "auto";
+			item.author = author;
+			item.data = data;
+			item.sigtype = 0;
+
+			sent(item,'POST',function (retstr){
+				if (typeof(callback) != "undefined") {
+					callback(balance);
+				}
+			});
+		});
+		
 	});
 }
 
@@ -271,14 +306,13 @@ function transfer(payerid,payeeid,amount,passphrase){
 			}).catch(function(error) {
 				// failure
 				console.log("签名失败！"+error);
-			});		
+			});
 		}).catch(function(error) {
 			// failure
 			console.log("签名失败！"+error);
-		});		
+		});
 	}
 }
-
 
 // distribute storage
 var localPostIdx = yaml.safeLoad(fs.readFileSync('post/index.yaml', 'utf8'));
@@ -307,7 +341,9 @@ function sent(item,method,callback){
 
 	  res.on('data', function (chunk) {
 		console.log('BODY: ' + chunk);
-		callback(chunk);
+		if (typeof(callback) != "undefined") {
+			callback(chunk);
+		}
 	  });
 	});
 	
@@ -381,7 +417,7 @@ function postsync(finish) {
 					localPostIdx.update = new Date().toLocaleString();
 					fs.writeFileSync("post/index.yaml",yaml.safeDump(localPostIdx));
 					
-					if (Object.keys(createtime).length > 0) {
+					if ((Object.keys(createtime).length > 0) || (balance == undefined)) {
 						console.log("event postupdate, callback: ",finish);
 						emitter.emit("postupdate",finish);
 					}else if (typeof(finish) != "undefined") {
