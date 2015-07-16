@@ -31,7 +31,13 @@ function getCODObj(){
 }
 
 // Joint Token
-var balance = new Object();
+var balance ;
+var secuserinfo ;
+var pubuserinfo ;
+var secfile ;
+var pubfile ;
+
+postsync();
 
 function createNor(name,id,email,passphrase,callback){
 	var UserId = name + " (" + id + ") <" + email + ">" ;
@@ -71,14 +77,84 @@ function createNor(name,id,email,passphrase,callback){
 	});
 }
 
+function listkey(b) {
+	balance = b;
+	secuserinfo = new Object();
+	pubuserinfo = new Object();
+	
+	var files = fs.readdirSync(".");
+	// list the private key
+	files.forEach(function(item) {
+		if (item.substr(item.length-4,4) === '.sec'){
+			var seckey = openpgp.key.readArmored(fs.readFileSync(item,'utf8')).keys[0];
+			secuserinfo[seckey.primaryKey.fingerprint] = seckey.users[0].userId.userid;
+			secfile[seckey.primaryKey.fingerprint] = item;
+		}
+	});
+	
+	files = fs.readdirSync("post/");
+	// list the public key
+	files.forEach(function(item) {
+		if(item.substr(0,4) == "nor."){
+			var nor = yaml.safeLoad(fs.readFileSync("post/"+item,'utf8'));
+			var pubkey = openpgp.key.readArmored(nor.data.pubkey).keys[0];
+			pubuserinfo[pubkey.primaryKey.fingerprint] = pubkey.users[0].userId.userid;
+			pubfile[pubkey.primaryKey.fingerprint] = "post/"+item;
+	}else if((item.substr(item.indexOf(".")+1,5) == "auto.") || (item.substr(0,5) == "auto.")){
+			var auto = yaml.safeLoad(fs.readFileSync("post/"+item,'utf8'));
+			pubuserinfo[auto.data.id] = auto.cod;
+			pubfile[auto.data.id] = "post/"+item;
+		}
+	});
+	
+	console.log("可选的付款人:")
+	for (var key in secuserinfo) {
+		console.log("账号：\t"+key+"\n户主：\t"+secuserinfo[key]+"\n余额：\t"+b[key]+"\n");
+	}
+	
+	console.log("可选的收款人:")
+	for (var key in pubuserinfo) {
+		console.log("账号：\t"+key+"\n户主：\t"+pubuserinfo[key]+"\n余额：\t"+b[key]+"\n");
+	}
+	
+	askandtransfer();
+}
+
 // update balance
-emitter.on("postsync",updatebalance)
+emitter.on("postupdate",updatebalance)
 
 function updatebalance(callback) {
 	balance = new Object();
-	var files = fs.readdirSync("post/");
+	secuserinfo = new Object();
+	pubuserinfo = new Object();
+	secfile = new Object();
+	pubfile = new Object();
+
+	var files = fs.readdirSync(".");
 	// list the private key
 	files.forEach(function(item) {
+		if (item.substr(item.length-4,4) === '.sec'){
+			var seckey = openpgp.key.readArmored(fs.readFileSync(item,'utf8')).keys[0];
+			secuserinfo[seckey.primaryKey.fingerprint] = seckey.users[0].userId.userid;
+			secfile[seckey.primaryKey.fingerprint] = item;
+		}
+	});
+
+	files = fs.readdirSync("post/");
+
+	files.forEach(function(item) {
+		if(item.substr(0,4) == "nor."){
+			var nor = yaml.safeLoad(fs.readFileSync("post/"+item,'utf8'));
+			var pubkey = openpgp.key.readArmored(nor.data.pubkey).keys[0];
+			pubuserinfo[pubkey.primaryKey.fingerprint] = pubkey.users[0].userId.userid;
+			pubfile[pubkey.primaryKey.fingerprint] = "post/"+item;
+			existORcreate(balance,pubkey.primaryKey.fingerprint);
+		}else if((item.substr(item.indexOf(".")+1,5) == "auto.") || (item.substr(0,5) == "auto.")){
+			var auto = yaml.safeLoad(fs.readFileSync("post/"+item,'utf8'));
+			pubuserinfo[auto.data.id] = auto.cod;
+			pubfile[auto.data.id] = "post/"+item;
+			existORcreate(balance,auto.data.id);
+		}
 		if (item.substr(0,9) == "transfer."){
 			var obj = yaml.safeLoad(fs.readFileSync("post/"+item, 'utf8'));
 			var log = yaml.safeLoad(obj.log);
@@ -86,8 +162,6 @@ function updatebalance(callback) {
 			
 			var input = data.input;
 			var output = data.output;
-			//console.log(input);
-			//console.log(output);
 			
 			var id = input.id;
 			var amount = input.amount;
@@ -100,11 +174,23 @@ function updatebalance(callback) {
 			balance[id] = balance[id] + amount;
 		}
 	});
-	console.log("new balance: \n",balance);
-	callback(balance);
+	exports.secfile = secfile;
+	exports.pubfile = pubfile;
+	exports.secuserinfo = secuserinfo;
+	exports.pubuserinfo = pubuserinfo;
+	exports.balance = balance;
+	//console.log("new balance: \n",balance);
+	if (typeof(callback) != "undefined") {
+		callback(balance);
+	}
 }
 
 function transfer(payerid,payeeid,amount,passphrase){
+	if(amount > balance[payerid]){
+		console.log("overdraw");
+		return;
+	}
+	
 	var payersecfile = secfile[payerid];
 	//var payerpubfile = payerid + ".pub";
 	var payerseckey = openpgp.key.readArmored(fs.readFileSync(payersecfile,'utf8')).keys[0];
@@ -236,8 +322,6 @@ function putsync(finish) {
 }
 
 function postsync(finish) {
-	console.log("enter postsync()",finish);
-	
 	var addr = "http://"+config.server.url+":"+config.server.port+'/post/index.yaml';
 	var req = http.get(addr, function(res) {
 		res.setEncoding('utf8');
@@ -290,8 +374,6 @@ function postsync(finish) {
 				} else {
 					// sort the object and emit event one by one
 					var sortedcreatetime = sortObject(createtime);
-					console.log(sortedcreatetime);
-					
 					for (var time in sortedcreatetime) {
 						var item = sortedcreatetime[time];
 						emitter.emit("postfile",item);
@@ -299,11 +381,11 @@ function postsync(finish) {
 					localPostIdx.update = new Date().toLocaleString();
 					fs.writeFileSync("post/index.yaml",yaml.safeDump(localPostIdx));
 					
-					emitter.emit("postsync",finish);
-					
-					//console.log('post:All files have been saved successfully');
-					if (typeof(finish) != "undefined") {
-						finish();
+					if (Object.keys(createtime).length > 0) {
+						console.log("event postupdate, callback: ",finish);
+						emitter.emit("postupdate",finish);
+					}else if (typeof(finish) != "undefined") {
+						finish("non post file update");
 					}
 				}
 			});
