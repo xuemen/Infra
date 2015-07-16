@@ -59,8 +59,8 @@ function createAuto(){
 	rl.question("请输入代码URL：\n", function(answer) {
 		url = answer;
 		listener = new Object();
-		listener["month"] = "month" ;
-		listener["year"] = "year" ;
+		listener["postfile"] = "postfile" ;
+		listener["postupdate"] = "postupdate" ;
 		
 		rl.question("备注(所属COD和账号户名)：\n", function(answer) {
 			name = answer;
