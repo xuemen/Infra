@@ -7,9 +7,9 @@ var yaml = require('js-yaml');
 var config = yaml.safeLoad(fs.readFileSync('config.yaml', 'utf8'));
 
 //infra.postsync();
-//infra.updatebalance(askandtransfer);
+infra.updatebalance(askandtransfer);
 //askandtransfer();
-createAuto();
+//createAuto();
 
 function log(b){
 	console.log("PSMD log:\n",b);
