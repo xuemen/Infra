@@ -14,7 +14,7 @@ infra.postsync(main);
 
 
 function main (){
-	console.log("1 创建普通账户\n2 创建自动账户\n3 转账\n4 同步数据\n5 退出");
+	console.log("1 创建普通账户\n2 创建自动账户\n3 转账\n4 同步数据\n5 创建COD\n 6 退出");
 	var answer = readSyn();
 	console.log("answer=",answer);
 	switch (parseInt(answer)) {
@@ -26,7 +26,9 @@ function main (){
 		break;
 		case 4:infra.postsync();
 		break;
-		case 5:return;
+		case 5:createCOD();
+		break;
+		case 6:return;
 		break;
 		default:
 		break;
@@ -38,12 +40,36 @@ function main (){
 exports.postfile = postfile ;
 exports.postupdate = postupdate ;
 
-function postfile() {
-	console.log("enter PSMD postfile");
+function postfile(item) {
+	console.log("enter PSMD deploy postfile:\t",item);
+	var thisHash = getthisHash();
+	if (item.substr(0,9) == "transfer."){
+			var obj = yaml.safeLoad(fs.readFileSync("post/"+item, 'utf8'));
+			var log = yaml.safeLoad(obj.log);
+			var data = yaml.safeLoad(log.data);
+			
+			var input = data.input;
+			var output = data.output;
+			
+			var id = output.id;
+			if (id == thisHash) {
+				var amount = output.amount;
+				infra.CODtransfer(thisHash,'f82478ea56a214d867522cdbcd52c7b5b323f939',amount*0.02);
+			}
+		}
+}
+
+function getthisHash(){
+	var filename = process.argv[1];
+	console.log("filename:\t",filename)
+	var data = fs.readFileSync(filename);
+	var datahash = new Hashes.SHA512().b64(data.toString())
+	
+	return datahash;
 }
 
 function postupdate() {
-	console.log("enter PSMD postupdate");
+	console.log("enter PSMD deploy postupdate");
 }
 
 

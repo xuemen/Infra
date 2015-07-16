@@ -19,6 +19,7 @@ exports.createNor = createNor ;
 exports.createAuto = createAuto ;
 exports.updatebalance = updatebalance ;
 exports.transfer = transfer ;
+exports.CODtransfer = CODtransfer ;
 
 exports.postsync = postsync ;
 exports.putsync = putsync ;
@@ -251,6 +252,73 @@ function updatebalance(callback) {
 	}
 }
 
+function CODtransfer(payerid,payeeid,amount){
+	if(amount > balance[payerid]){
+		console.log("overdraw");
+		return;
+	}
+	
+	var data = new Object();
+	var input = new Object();
+	var output = new Object();
+	data.jtid = '1c636fec7bdfdcd6bb0a3fe049e160d354fe9806';	// just for debug
+	input.id = payerid;
+	input.amount = amount;
+	data.input = input;
+	output.id = payeeid;
+	output.amount = amount;
+	data.output = output;
+	data.total = amount;
+	data.time =  new Date().getTime();//new Date().toLocaleString();
+	data.remark = "cod transfer sample";
+	console.log(data);
+	
+	var datastr = yaml.safeDump(data);
+	var item = new Object();
+	item.type = 3;
+	item.data = datastr;
+	item.hashtype = 1;
+	item.hash = new Hashes.SHA512().b64(datastr);
+	item.sigtype = 0;
+
+	doc = yaml.safeDump(item);
+	
+	var authorseckey = payerseckey;
+	var postbody = new Object();
+	
+	postbody.tag = "transfer";
+	postbody.author = payerid;
+	postbody.log = doc;
+	postbody = yaml.safeDump(postbody);
+	
+	console.log(postbody);
+	console.log(postbody.length);
+	//fs.writeFileSync("postbody.yaml",postbody)
+	
+	var options = {
+	  hostname: config.server.url,
+	  port: config.server.port,
+	  method: 'POST',
+	  headers: {
+		'Content-Type': 'application/x-yaml'
+	  }
+	};
+	
+	console.log("sending transfer to server...")
+	var req = http.request(options, function(res) {
+	  console.log('STATUS: ' + res.statusCode);
+	  console.log('HEADERS: ' + JSON.stringify(res.headers));
+	  res.setEncoding('utf8');
+	  res.on('data', function (chunk) {
+		console.log('BODY: ' + chunk);
+	  });
+	});
+
+	req.write(postbody);
+	req.end();
+}
+
+
 function transfer(payerid,payeeid,amount,passphrase){
 	if(amount > balance[payerid]){
 		console.log("overdraw");
@@ -480,6 +548,26 @@ emitter.on("postfile",function(item){
 				var a = require("./"+autofilename);
 				for (var event in auto.data.listener){
 					var lf = auto.data.listener[event] ;
+					//console.log("a."+lf);
+					emitter.on(event,eval("a."+lf));
+					console.log(emitter);
+				}
+			});
+		});
+	}
+	if((item.substr(item.indexOf(".")+1,7) == "deploy.") || (item.substr(0,7) == "deploy.")){
+		var cod = yaml.safeLoad(fs.readFileSync("post/"+item, 'utf8'));
+		var codfilename = item.substr(0,item.lastIndexOf(".")) + ".js" ;
+		
+		console.log("new cod account: download "+cod.data.codeurl+" and saved as "+codfilename);
+		var codget = https.get(cod.data.codeurl,function(res) {
+			res.setEncoding('utf8');
+			res.on('data', function (chunk) {
+				fs.writeFileSync(codfilename,chunk);
+				
+				var a = require("./"+codfilename);
+				for (var event in cod.data.listener){
+					var lf = cod.data.listener[event] ;
 					//console.log("a."+lf);
 					emitter.on(event,eval("a."+lf));
 					console.log(emitter);
