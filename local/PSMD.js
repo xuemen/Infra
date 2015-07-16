@@ -6,8 +6,13 @@ var yaml = require('js-yaml');
 
 var config = yaml.safeLoad(fs.readFileSync('config.yaml', 'utf8'));
 
-infra.postsync();
+infra.postsync(log);
+//infra.emitter.emit("postsync",log);
 
+
+function log(b){
+	console.log("PSMD log:\n",b);
+};
 
 function createNor(){
 	process.stdin.setEncoding('utf8');

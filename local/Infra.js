@@ -14,10 +14,12 @@ exports.config = config ;
 exports.getCODlist = getCODlist ;
 exports.getCODObj = getCODObj ;
 
-
 exports.createNor = createNor ;
-exports.sent = sent ;
+exports.updatebalance = updatebalance ;
+exports.transfer = transfer ;
+
 exports.postsync = postsync ;
+exports.putsync = putsync ;
 
 
 function getCODlist(){
@@ -27,6 +29,9 @@ function getCODlist(){
 function getCODObj(){
 	
 }
+
+// Joint Token
+var balance = new Object();
 
 function createNor(name,id,email,passphrase,callback){
 	var UserId = name + " (" + id + ") <" + email + ">" ;
@@ -66,6 +71,129 @@ function createNor(name,id,email,passphrase,callback){
 	});
 }
 
+// update balance
+emitter.on("postsync",updatebalance)
+
+function updatebalance(callback) {
+	balance = new Object();
+	var files = fs.readdirSync("post/");
+	// list the private key
+	files.forEach(function(item) {
+		if (item.substr(0,9) == "transfer."){
+			var obj = yaml.safeLoad(fs.readFileSync("post/"+item, 'utf8'));
+			var log = yaml.safeLoad(obj.log);
+			var data = yaml.safeLoad(log.data);
+			
+			var input = data.input;
+			var output = data.output;
+			//console.log(input);
+			//console.log(output);
+			
+			var id = input.id;
+			var amount = input.amount;
+			existORcreate(balance,id);
+			balance[id] = balance[id] - amount;
+			
+			id = output.id;
+			amount = output.amount;
+			existORcreate(id);
+			balance[id] = balance[id] + amount;
+		}
+	});
+	console.log("new balance: \n",balance);
+	callback(balance);
+}
+
+function transfer(payerid,payeeid,amount,passphrase){
+	var payersecfile = secfile[payerid];
+	//var payerpubfile = payerid + ".pub";
+	var payerseckey = openpgp.key.readArmored(fs.readFileSync(payersecfile,'utf8')).keys[0];
+	//var payerpubkey = openpgp.key.readArmored(fs.readFileSync(payerpubfile,'utf8')).keys[0];
+	
+	var payeepubfile = pubfile[payeeid];
+	var nor = yaml.safeLoad(fs.readFileSync(payeepubfile,'utf8'));
+	var payeepubkey = openpgp.key.readArmored(nor.data.pubkey).keys[0];
+	
+	var data = new Object();
+	var input = new Object();
+	var output = new Object();
+	data.jtid = '1c636fec7bdfdcd6bb0a3fe049e160d354fe9806';	// just for debug
+	input.id = payerseckey.primaryKey.fingerprint;
+	input.amount = amount;
+	data.input = input;
+	output.id = payeepubkey.primaryKey.fingerprint;
+	output.amount = amount;
+	data.output = output;
+	data.total = amount;
+	data.time =  new Date().getTime();//new Date().toLocaleString();
+	data.remark = "transfer sample";
+	console.log(data);
+	
+	var datastr = yaml.safeDump(data);
+	var item = new Object();
+	item.type = 3;
+	item.data = datastr;
+	item.hashtype = 1;
+	item.hash = new Hashes.SHA512().b64(datastr);
+	
+	if(payerseckey.decrypt(passphrase)){
+		openpgp.signClearMessage(payerseckey,datastr).then(function(pgpMessage){
+			// success
+			console.log(pgpMessage);
+			item.sigtype = 2;
+			item.sig = pgpMessage;
+			doc = yaml.safeDump(item);
+			
+			var authorseckey = payerseckey;
+			var postbody = new Object();
+			
+			postbody.tag = "transfer";
+			postbody.author = payerid;
+			postbody.log = doc;
+			openpgp.signClearMessage(authorseckey,doc).then(function(pgpMessage){
+				// success
+				
+				postbody.sig = pgpMessage;
+				postbody = yaml.safeDump(postbody);
+				
+				console.log(postbody);
+				console.log(postbody.length);
+				//fs.writeFileSync("postbody.yaml",postbody)
+				
+				var options = {
+				  hostname: config.server.url,
+				  port: config.server.port,
+				  method: 'POST',
+				  headers: {
+					'Content-Type': 'application/x-yaml'
+				  }
+				};
+				
+				console.log("sending transfer to server...")
+				var req = http.request(options, function(res) {
+				  console.log('STATUS: ' + res.statusCode);
+				  console.log('HEADERS: ' + JSON.stringify(res.headers));
+				  res.setEncoding('utf8');
+				  res.on('data', function (chunk) {
+					console.log('BODY: ' + chunk);
+				  });
+				});
+
+				req.write(postbody);
+				req.end();
+				
+			}).catch(function(error) {
+				// failure
+				console.log("签名失败！"+error);
+			});		
+		}).catch(function(error) {
+			// failure
+			console.log("签名失败！"+error);
+		});		
+	}
+}
+
+
 // distribute storage
 var localPostIdx = yaml.safeLoad(fs.readFileSync('post/index.yaml', 'utf8'));
 var localPutIdx = yaml.safeLoad(fs.readFileSync('put/index.yaml', 'utf8'));
@@ -101,7 +229,15 @@ function sent(item,method,callback){
 	req.end();
 }
 
+function putsync(finish) {
+	if (typeof(finish) != "undefined") {
+		finish();
+	}
+}
+
 function postsync(finish) {
+	console.log("enter postsync()",finish);
+	
 	var addr = "http://"+config.server.url+":"+config.server.port+'/post/index.yaml';
 	var req = http.get(addr, function(res) {
 		res.setEncoding('utf8');
@@ -162,6 +298,9 @@ function postsync(finish) {
 					}
 					localPostIdx.update = new Date().toLocaleString();
 					fs.writeFileSync("post/index.yaml",yaml.safeDump(localPostIdx));
+					
+					emitter.emit("postsync",finish);
+					
 					//console.log('post:All files have been saved successfully');
 					if (typeof(finish) != "undefined") {
 						finish();
@@ -221,4 +360,12 @@ function sortObject(o) {
         sorted[a[key]] = o[a[key]];
     }
     return sorted;
+}
+
+
+function existORcreate(obj,id) {
+	//console.log(id);
+	if (!obj.hasOwnProperty(id)) {
+		obj[id] = 0;
+	}
 }
