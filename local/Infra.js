@@ -432,7 +432,7 @@ function sent(item,method,callback){
 	  }
 	};
 	
-	console.log("sending account to server...\n");
+	console.log("sending account to server...\n",options);
 
 	var req = http.request(options, function(res) {
 	  console.log('STATUS: ' + res.statusCode);
