@@ -14,6 +14,7 @@ exports.config = config ;
 
 exports.getCODlist = getCODlist ;
 exports.getCODObj = getCODObj ;
+exports.createCOD = createCOD ;
 
 exports.createNor = createNor ;
 exports.createAuto = createAuto ;
@@ -23,6 +24,9 @@ exports.CODtransfer = CODtransfer ;
 
 exports.postsync = postsync ;
 exports.putsync = putsync ;
+exports.sent = sent ;
+
+exports.getthisHash = getthisHash ;
 
 // coop net
 function getCODlist(){
@@ -33,7 +37,7 @@ function getCODObj(){
 	
 }
 
-function createCOD((url,listener,author,name,callback){
+function createCOD(url,listener,author,name,callback){
 	https.get(url,function (response){
 		response.on('data',function(js){
 			console.log(js.toString());
@@ -222,10 +226,43 @@ function updatebalance(callback) {
 			pubfile[auto.data.id] = "post/"+item;
 			existORcreate(balance,auto.data.id);
 		}
+	});
+	
+	//files = fs.readdirSync("post/");
+	files.forEach(function(item) {
 		if (item.substr(0,9) == "transfer."){
 			var obj = yaml.safeLoad(fs.readFileSync("post/"+item, 'utf8'));
-			var log = yaml.safeLoad(obj.log);
-			var data = yaml.safeLoad(log.data);
+			console.log("\npostfile event obj.data:\n",obj.data);
+			var data ;
+			if(obj.log != undefined){
+				var log = yaml.safeLoad(obj.log);
+				data = yaml.safeLoad(log.data);
+			}else{
+				data = obj.data;
+				console.log("postfile event data:\n",data);
+				var msg = openpgp.cleartext.readArmored(data);
+				console.log("postfile event msg:\n",msg);
+				console.log("postfile event msg text:\n",msg.text);
+				//console.log("postfile event msg getText:\n",msg.getText());
+				
+			var author = obj.author ;
+			//console.log("author",author);
+			//console.log("pubfile author",pubfile[author]);
+			var nor = yaml.safeLoad(fs.readFileSync(pubfile[author],'utf8'));
+			var pubkeys = openpgp.key.readArmored(nor.data.pubkey).keys;
+			var pubkey = pubkeys[0];
+			console.log("pubkey author pubkeys\n",pubkeys);
+			console.log("pubkey author pubkey\n]",pubkey);
+			var result = msg.verify(pubkeys);
+			console.log("verify result",result);
+			console.log("verify result.keyid",result[0].keyid);
+			console.log("verify result.valid",result[0].valid);
+
+			data = yaml.safeLoad(msg.text);
+			}
+			
+			
+			
 			
 			var input = data.input;
 			var output = data.output;
@@ -319,7 +356,7 @@ function CODtransfer(payerid,payeeid,amount){
 }
 
 
-function transfer(payerid,payeeid,amount,passphrase){
+function transfer(payerid,payeeid,amount,passphrase,callback){
 	if(amount > balance[payerid]){
 		console.log("overdraw");
 		return;
@@ -332,16 +369,17 @@ function transfer(payerid,payeeid,amount,passphrase){
 	
 	var payeepubfile = pubfile[payeeid];
 	var nor = yaml.safeLoad(fs.readFileSync(payeepubfile,'utf8'));
-	var payeepubkey = openpgp.key.readArmored(nor.data.pubkey).keys[0];
+	//var payeepubkey = openpgp.key.readArmored(nor.data.pubkey).keys[0];
 	
 	var data = new Object();
 	var input = new Object();
 	var output = new Object();
 	data.jtid = '1c636fec7bdfdcd6bb0a3fe049e160d354fe9806';	// just for debug
+	data.type = 3;
 	input.id = payerseckey.primaryKey.fingerprint;
 	input.amount = amount;
 	data.input = input;
-	output.id = payeepubkey.primaryKey.fingerprint;
+	output.id = payeeid.toString();
 	output.amount = amount;
 	data.output = output;
 	data.total = amount;
@@ -351,61 +389,21 @@ function transfer(payerid,payeeid,amount,passphrase){
 	
 	var datastr = yaml.safeDump(data);
 	var item = new Object();
-	item.type = 3;
-	item.data = datastr;
-	item.hashtype = 1;
-	item.hash = new Hashes.SHA512().b64(datastr);
+	item.tag = "transfer";
+	item.author = payerid;
+	item.sigtype = 2;
+	//item.hash = new Hashes.SHA512().b64(datastr);
 	
 	if(payerseckey.decrypt(passphrase)){
+		//var sig = openpgp.sign(payerseckey,data);
+		//console.log("infra.transfer:",sig);
+		//console.log("infra.transfer:",data);
 		openpgp.signClearMessage(payerseckey,datastr).then(function(pgpMessage){
 			// success
 			console.log(pgpMessage);
-			item.sigtype = 2;
-			item.sig = pgpMessage;
-			doc = yaml.safeDump(item);
+			item.data = pgpMessage;
 			
-			var authorseckey = payerseckey;
-			var postbody = new Object();
-			
-			postbody.tag = "transfer";
-			postbody.author = payerid;
-			postbody.log = doc;
-			openpgp.signClearMessage(authorseckey,doc).then(function(pgpMessage){
-				// success
-				
-				postbody.sig = pgpMessage;
-				postbody = yaml.safeDump(postbody);
-				
-				console.log(postbody);
-				console.log(postbody.length);
-				//fs.writeFileSync("postbody.yaml",postbody)
-				
-				var options = {
-				  hostname: config.server.url,
-				  port: config.server.port,
-				  method: 'POST',
-				  headers: {
-					'Content-Type': 'application/x-yaml'
-				  }
-				};
-				
-				console.log("sending transfer to server...")
-				var req = http.request(options, function(res) {
-				  console.log('STATUS: ' + res.statusCode);
-				  console.log('HEADERS: ' + JSON.stringify(res.headers));
-				  res.setEncoding('utf8');
-				  res.on('data', function (chunk) {
-					console.log('BODY: ' + chunk);
-				  });
-				});
-
-				req.write(postbody);
-				req.end();
-				
-			}).catch(function(error) {
-				// failure
-				console.log("签名失败！"+error);
-			});
+			sent(item,'POST',callback);
 		}).catch(function(error) {
 			// failure
 			console.log("签名失败！"+error);
@@ -605,4 +603,14 @@ function existORcreate(obj,id) {
 	if (!obj.hasOwnProperty(id)) {
 		obj[id] = 0;
 	}
+}
+
+
+function getthisHash(){
+	var filename = process.argv[1];
+	console.log("filename:\t",filename)
+	var data = fs.readFileSync(filename);
+	var datahash = new Hashes.SHA512().b64(data.toString())
+	
+	return datahash;
 }
