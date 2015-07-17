@@ -246,8 +246,8 @@ function updatebalance(callback) {
 				//console.log("postfile event msg getText:\n",msg.getText());
 				
 			var author = obj.author ;
-			//console.log("author",author);
-			//console.log("pubfile author",pubfile[author]);
+			console.log("author",author);
+			console.log("pubfile author",pubfile[author]);
 			var nor = yaml.safeLoad(fs.readFileSync(pubfile[author],'utf8'));
 			var pubkeys = openpgp.key.readArmored(nor.data.pubkey).keys;
 			var pubkey = pubkeys[0];
@@ -368,6 +368,9 @@ function transfer(payerid,payeeid,amount,passphrase,callback){
 	//var payerpubkey = openpgp.key.readArmored(fs.readFileSync(payerpubfile,'utf8')).keys[0];
 	
 	var payeepubfile = pubfile[payeeid];
+	console.log("transfer payeeid:",payeeid)
+	console.log("transfer pubfile:",pubfile)
+	console.log("transfer payeepubfile:",payeepubfile)
 	var nor = yaml.safeLoad(fs.readFileSync(payeepubfile,'utf8'));
 	//var payeepubkey = openpgp.key.readArmored(nor.data.pubkey).keys[0];
 	

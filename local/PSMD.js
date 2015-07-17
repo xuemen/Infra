@@ -1,4 +1,4 @@
-var infra = require('./infra');
+var infra = require('./Infra');
 
 var fs = require('fs');
 var readline = require('readline');
@@ -83,7 +83,7 @@ function JoinWorkshop(){
 				passphrase = answer;
 				rl.close();
 
-				infra.transfer(id,"OkjS5CGNthtXXVocmtl3lHPgJ8I5tGhaiMw18O65ZYGSncpnDkTj8JUExc0S89OEmCNzKfyVH6O/VuQRqGZbgg==",1700,passphrase,function(retstr){
+				infra.transfer(id,"3BuyYUZ8JJqDOWvjLhIZkAPTSmQZpVCHAgzl8zpofpEvyJW79S2WvbZ8F18JgOvA5Mt6nJCv8SroMFhymqjRWQ==",1700,passphrase,function(retstr){
 					console.log("\n\nenter join whokshop callback...\n");
 					var data = new Object();
 					data.id = workshopid;
