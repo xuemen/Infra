@@ -239,30 +239,27 @@ function updatebalance(callback) {
 				data = yaml.safeLoad(log.data);
 			}else{
 				data = obj.data;
-				console.log("postfile event data:\n",data);
+				//console.log("postfile event data:\n",data);
 				var msg = openpgp.cleartext.readArmored(data);
-				console.log("postfile event msg:\n",msg);
-				console.log("postfile event msg text:\n",msg.text);
+				//console.log("postfile event msg:\n",msg);
+				//console.log("postfile event msg text:\n",msg.text);
 				//console.log("postfile event msg getText:\n",msg.getText());
 				
 			var author = obj.author ;
-			console.log("author",author);
-			console.log("pubfile author",pubfile[author]);
+			//console.log("author",author);
+			//console.log("pubfile author",pubfile[author]);
 			var nor = yaml.safeLoad(fs.readFileSync(pubfile[author],'utf8'));
 			var pubkeys = openpgp.key.readArmored(nor.data.pubkey).keys;
 			var pubkey = pubkeys[0];
-			console.log("pubkey author pubkeys\n",pubkeys);
-			console.log("pubkey author pubkey\n]",pubkey);
+			//console.log("pubkey author pubkeys\n",pubkeys);
+			//console.log("pubkey author pubkey\n]",pubkey);
 			var result = msg.verify(pubkeys);
-			console.log("verify result",result);
-			console.log("verify result.keyid",result[0].keyid);
-			console.log("verify result.valid",result[0].valid);
+			//console.log("verify result",result);
+			//console.log("verify result.keyid",result[0].keyid);
+			//console.log("verify result.valid",result[0].valid);
 
 			data = yaml.safeLoad(msg.text);
 			}
-			
-			
-			
 			
 			var input = data.input;
 			var output = data.output;
@@ -473,7 +470,7 @@ function postsync(finish) {
 				//console.log(globalPostIdx[key]);
 				if (localPostIdx[key] < globalPostIdx[key]){
 					for (var id = localPostIdx[key]+1;id <= globalPostIdx[key];id++) {
-						//console.log("key:\t"+key+"\tid:\t"+id);
+						console.log("key:\t"+key+"\tid:\t"+id);
 						
 						postfileArray.push(key+"."+id.toString()+".yaml") ;
 					}
