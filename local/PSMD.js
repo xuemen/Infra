@@ -34,17 +34,25 @@ function main (){
 		break;
 		case 8: JoinWorkshop();
 		break;
-		case 9:return;
+		case 9://process.exit(0);
 		break;
 		default:
 		break;
 		
 	}
-
+	process.exit(0);
 }
 
 function listWorkshop(){
-	console.log("enter listWorkshop") ;
+	console.log("实训班清单（课号）：") ;
+	var files = fs.readdirSync("post/");
+	// list the private key
+	files.forEach(function(item) {
+		if (item.substr(0,14) === 'PSMD.workshop.'){
+			var workshop = yaml.safeLoad(fs.readFileSync("post/"+item,'utf8'));
+			console.log(workshop.data.id);
+		}
+	});
 }
 
 function JoinWorkshop(){

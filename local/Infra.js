@@ -232,7 +232,7 @@ function updatebalance(callback) {
 	files.forEach(function(item) {
 		if (item.substr(0,9) == "transfer."){
 			var obj = yaml.safeLoad(fs.readFileSync("post/"+item, 'utf8'));
-			console.log("\npostfile event obj.data:\n",obj.data);
+			//console.log("\npostfile event obj.data:\n",obj.data);
 			var data ;
 			if(obj.log != undefined){
 				var log = yaml.safeLoad(obj.log);
@@ -515,7 +515,7 @@ function postsync(finish) {
 					fs.writeFileSync("post/index.yaml",yaml.safeDump(localPostIdx));
 					
 					if ((Object.keys(createtime).length > 0) || (balance == undefined)) {
-						console.log("event postupdate, callback: ",finish);
+						//console.log("event postupdate, callback: ",finish);
 						emitter.emit("postupdate",finish);
 					}else if (typeof(finish) != "undefined") {
 						finish("non post file update");
