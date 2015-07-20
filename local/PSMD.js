@@ -53,36 +53,6 @@ function main () {
 	});
 }
 
-function main1 (){
-	console.log("1 创建普通账户\n2 创建自动账户\n3 转账\n4 同步数据\n5 创建COD\n6 设立实训班\n7 列出试训班\n8 报名\n9 退出");
-	var answer = readSyn();
-	console.log("answer=",answer);
-	switch (parseInt(answer)) {
-		case 1: createNor();
-		break;
-		case 2:createAuto();
-		break;
-		case 3:askandtransfer();
-		break;
-		case 4:infra.postsync();
-		break;
-		case 5:createCOD();
-		break;
-		case 6: createWorkshop();
-		break;
-		case 7: listWorkshop();
-		break;
-		case 8: JoinWorkshop();
-		break;
-		case 9:return;
-		break;
-		default:
-		break;
-		
-	}
-
-}
-
 function listWorkshop(){
 	console.log("实训班清单（课号）：") ;
 	var files = fs.readdirSync("post/");
@@ -173,27 +143,33 @@ function createWorkshop(){
 			time = answer;
 			rl.question("学费：\n", function(answer) {
 				fee = answer;
-				rl.question("实训主任：\n", function(answer) {
-					admin = answer;
-					rl.close();
+				rl.question("实训主任（不含空格的字符串）：\n", function(answer) {
+					if(answer.indexOf(" ") == -1){
+						admin = answer;
+						rl.close();
 
-					var data = new Object();
-					data.id = workshopid;
-					data.time = time;
-					data.fee = fee;
-					data.admin = admin;
+						var data = new Object();
+						data.id = workshopid;
+						data.time = time;
+						data.fee = fee;
+						data.admin = admin;
+						
+						var item = new Object();
+						item.cod = "PSMD";
+						item.tag = "workshop";
+						item.author = admin;
+						item.data = data;
+						item.sigtype = 0;
+						item.remark = "workshop create";
+						
+						infra.sent(item,"POST",function(retstr){
+							console.log(retstr," 已创建.");
+						});
+					}else {
+						console.log("实训主任名字带空格，请重新运行。");
+						process.exit(0);
+					}
 					
-					var item = new Object();
-					item.cod = "PSMD";
-					item.tag = "workshop";
-					item.author = admin;
-					item.data = data;
-					item.sigtype = 0;
-					item.remark = "workshop create";
-					
-					infra.sent(item,"POST",function(retstr){
-						console.log(retstr," 已创建.");
-					});
 				});
 			});
 		});
