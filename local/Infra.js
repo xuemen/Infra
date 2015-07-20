@@ -525,6 +525,7 @@ function putsync(finish) {
 }
 
 function postsync(finish) {
+	postfileArray = new Array() ;
 	var addr = "http://"+config.server.url+":"+config.server.port+'/post/index.yaml';
 	var req = http.get(addr, function(res) {
 		var postindex = ""; 
@@ -595,7 +596,7 @@ function postsync(finish) {
 					fs.writeFileSync("post/index.yaml",yaml.safeDump(localPostIdx));
 					
 					if ((Object.keys(createtime).length > 0) || (balance == undefined)) {
-						//console.log("event postupdate, callback: ",finish);
+						console.log("event postupdate,postfileArray:\n",postfileArray);
 						emitter.emit("postupdate",finish);
 					}else if (typeof(finish) != "undefined") {
 						finish("non post file update");
