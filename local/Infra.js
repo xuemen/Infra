@@ -76,7 +76,7 @@ var pubuserinfo ;
 var secfile ;
 var pubfile ;
 
-postsync();
+//postsync();
 
 function createNor(name,id,email,passphrase,callback){
 	var UserId = name + " (" + id + ") <" + email + ">" ;
@@ -120,7 +120,13 @@ function createNor(name,id,email,passphrase,callback){
 
 function createAuto(url,listener,author,name,callback){
 	https.get(url,function (response){
-		response.on('data',function(js){
+		var js = ""; 
+		res.setEncoding('utf8');
+
+		res.on('data', function(data){
+		  js += data ;
+		});
+		res.on('end', function(){
 			console.log(js.toString());
 			
 			var data = new Object();
@@ -417,7 +423,6 @@ function CODtransfer(payerid,payeeid,amount){
 	req.end();
 }
 
-
 function transfer(payerid,payeeid,amount,passphrase,callback){
 	if(amount > balance[payerid]){
 		console.log("overdraw");
@@ -522,9 +527,14 @@ function putsync(finish) {
 function postsync(finish) {
 	var addr = "http://"+config.server.url+":"+config.server.port+'/post/index.yaml';
 	var req = http.get(addr, function(res) {
+		var postindex = ""; 
 		res.setEncoding('utf8');
-		res.on('data', function (chunk) {
-			globalPostIdx = yaml.safeLoad(chunk);
+		
+		res.on('data', function(data){
+		  postindex += data ;
+		});
+		res.on('end', function(){
+			globalPostIdx = yaml.safeLoad(postindex);
 			for (var key in globalPostIdx) {
 				//console.log("key:\t"+key);
 				if (key == "update") continue;
@@ -551,8 +561,13 @@ function postsync(finish) {
 				var fileaddr = "http://"+config.server.url+":"+config.server.port+'/post/'+item;
 				var filename = "post/"+item;
 				var req = http.get(fileaddr, function(res) {
+					var chunk = ""; 
 					res.setEncoding('utf8');
-					res.on('data', function (chunk) {
+					
+					res.on('data', function(data){
+					  chunk += data ;
+					});
+					res.on('end', function(){
 						fs.writeFileSync(filename,chunk);
 						console.log("post: "+filename+" saved.");
 						
@@ -604,8 +619,13 @@ emitter.on("postfile",function(item){
 		
 		console.log("new auto account: download "+auto.data.codeurl+" and saved as "+autofilename);
 		var autoget = https.get(auto.data.codeurl,function(res) {
+			var chunk = ""; 
 			res.setEncoding('utf8');
-			res.on('data', function (chunk) {
+
+			res.on('data', function(data){
+			  chunk += data ;
+			});
+			res.on('end', function(){
 				fs.writeFileSync(autofilename,chunk);
 				
 				var a = require("./"+autofilename);
@@ -624,8 +644,13 @@ emitter.on("postfile",function(item){
 		
 		console.log("new cod account: download "+cod.data.codeurl+" and saved as "+codfilename);
 		var codget = https.get(cod.data.codeurl,function(res) {
+			var chunk = ""; 
 			res.setEncoding('utf8');
-			res.on('data', function (chunk) {
+
+			res.on('data', function(data){
+			  chunk += data ;
+			});
+			res.on('end', function(){
 				fs.writeFileSync(codfilename,chunk);
 				
 				var a = require("./"+codfilename);
