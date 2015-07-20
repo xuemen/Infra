@@ -634,7 +634,7 @@ emitter.on("postfile",function(item){
 					var lf = auto.data.listener[event] ;
 					//console.log("a."+lf);
 					emitter.on(event,eval("a."+lf));
-					console.log(emitter);
+					//console.log(emitter);
 				}
 			});
 		});
