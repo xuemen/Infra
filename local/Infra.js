@@ -21,6 +21,7 @@ exports.createAuto = createAuto ;
 exports.updatebalance = updatebalance ;
 exports.transfer = transfer ;
 exports.CODtransfer = CODtransfer ;
+exports.Issue = Issue ;
 
 exports.postsync = postsync ;
 exports.putsync = putsync ;
@@ -245,34 +246,37 @@ function updatebalance(callback) {
 				//console.log("postfile event msg text:\n",msg.text);
 				//console.log("postfile event msg getText:\n",msg.getText());
 				
-			var author = obj.author ;
-			//console.log("author",author);
-			//console.log("pubfile author",pubfile[author]);
-			var nor = yaml.safeLoad(fs.readFileSync(pubfile[author],'utf8'));
-			var pubkeys = openpgp.key.readArmored(nor.data.pubkey).keys;
-			var pubkey = pubkeys[0];
-			//console.log("pubkey author pubkeys\n",pubkeys);
-			//console.log("pubkey author pubkey\n]",pubkey);
-			var result = msg.verify(pubkeys);
-			//console.log("verify result",result);
-			//console.log("verify result.keyid",result[0].keyid);
-			//console.log("verify result.valid",result[0].valid);
+				var author = obj.author ;
+				//console.log("author",author);
+				//console.log("pubfile author",pubfile[author]);
+				var nor = yaml.safeLoad(fs.readFileSync(pubfile[author],'utf8'));
+				var pubkeys = openpgp.key.readArmored(nor.data.pubkey).keys;
+				var pubkey = pubkeys[0];
+				//console.log("pubkey author pubkeys\n",pubkeys);
+				//console.log("pubkey author pubkey\n]",pubkey);
+				var result = msg.verify(pubkeys);
+				//console.log("verify result",result);
+				//console.log("verify result.keyid",result[0].keyid);
+				//console.log("verify result.valid",result[0].valid);
 
-			data = yaml.safeLoad(msg.text);
+				data = yaml.safeLoad(msg.text);
 			}
 			
-			var input = data.input;
-			var output = data.output;
+			if(data.hasOwnProperty("input")) {
+				var input = data.input;
+				var id = input.id;
+				var amount = input.amount;
+				existORcreate(balance,id);
+				balance[id] = balance[id] - amount;
+			}
 			
-			var id = input.id;
-			var amount = input.amount;
-			existORcreate(balance,id);
-			balance[id] = balance[id] - amount;
-			
-			id = output.id;
-			amount = output.amount;
-			existORcreate(id);
-			balance[id] = balance[id] + amount;
+			if(data.hasOwnProperty("output")) {
+				var output = data.output;
+				id = output.id;
+				amount = output.amount;
+				existORcreate(id);
+				balance[id] = balance[id] + amount;
+			}
 		}
 	});
 	exports.secfile = secfile;
@@ -284,6 +288,67 @@ function updatebalance(callback) {
 	if (typeof(callback) != "undefined") {
 		callback(balance);
 	}
+}
+
+function Issue() {
+	var data = new Object();
+	var input = new Object();
+	var output = new Object();
+	data.jtid = '1c636fec7bdfdcd6bb0a3fe049e160d354fe9806';	// just for debug
+	//input.id = payerid;
+	//input.amount = amount;
+	//data.input = input;
+	output.id = "d4daa038556e2fc2b01f55036f4ff2d2e8c2fc78";
+	output.amount = 8192;
+	data.output = output;
+	data.total = 8192;
+	data.time =  new Date().getTime();//new Date().toLocaleString();
+	data.remark = "issue sample";
+	console.log(data);
+	
+	var datastr = yaml.safeDump(data);
+	var item = new Object();
+	item.type = 1;
+	item.data = datastr;
+	item.hashtype = 1;
+	item.hash = new Hashes.SHA512().b64(datastr);
+	item.sigtype = 0;
+
+	doc = yaml.safeDump(item);
+	
+	//var authorseckey = payerseckey;
+	var postbody = new Object();
+	
+	postbody.tag = "transfer";
+	postbody.author = "JT";
+	postbody.log = doc;
+	postbody = yaml.safeDump(postbody);
+	
+	console.log(postbody);
+	console.log(postbody.length);
+	//fs.writeFileSync("postbody.yaml",postbody)
+	
+	var options = {
+	  hostname: config.server.url,
+	  port: config.server.port,
+	  method: 'POST',
+	  headers: {
+		'Content-Type': 'application/x-yaml'
+	  }
+	};
+	
+	console.log("sending transfer to server...")
+	var req = http.request(options, function(res) {
+	  console.log('STATUS: ' + res.statusCode);
+	  console.log('HEADERS: ' + JSON.stringify(res.headers));
+	  res.setEncoding('utf8');
+	  res.on('data', function (chunk) {
+		console.log('BODY: ' + chunk);
+	  });
+	});
+
+	req.write(postbody);
+	req.end();
 }
 
 function CODtransfer(payerid,payeeid,amount){
@@ -317,7 +382,7 @@ function CODtransfer(payerid,payeeid,amount){
 
 	doc = yaml.safeDump(item);
 	
-	var authorseckey = payerseckey;
+	//var authorseckey = payerseckey;
 	var postbody = new Object();
 	
 	postbody.tag = "transfer";

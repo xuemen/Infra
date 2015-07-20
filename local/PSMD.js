@@ -22,7 +22,7 @@ function main () {
 
 	var name,id,email,passphrase;
 
-	rl.question("1 创建普通账户\n2 创建自动账户\n3 转账\n4 同步数据\n5 创建COD\n6 设立实训班\n7 列出试训班\n8 报名\n9 退出\n", function(answer) {
+	rl.question("1 创建普通账户\n2 创建自动账户\n3 转账\n4 同步数据\n5 创建COD\n6 设立实训班\n7 列出试训班\n8 报名\n9 发行\n10 退出\n", function(answer) {
 		console.log("answer=",answer);
 		rl.close();
 		switch (parseInt(answer)) {
@@ -42,7 +42,9 @@ function main () {
 			break;
 			case 8: JoinWorkshop();
 			break;
-			case 9:return;
+			case 9: infra.Issue();
+			break;
+			case 10:return;
 			break;
 			default:
 			break;

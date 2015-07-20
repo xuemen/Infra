@@ -1,16 +1,5 @@
-update: 'Mon Jul 20 2015 09:37:40 GMT+0800 (中国标准时间)'
-transfer.6b9d1a97da9f1cd048b0fb4ada74a356df23290b: 1
-nor.hyg: 2
-PSMD-1.auto.zhaoyh: 1
-PSMD.deploy.zhaoyh: 1
-transfer.aa26436def81807b316dfa3666c034f0fff04ab8: 1
-PSMD.workshop.zhaoyh: 1
-nor.limx: 1
-transfer.5fc796775b98edb1edb64331ac1a629264117d89: 1
-testtag.huangyg: 5
-transfer.huangyg: 4
-transfer.raw: 1
-transfer.P2: 2
-nor.huangyg: 1
-nor.raw: 1
+update: 'Mon Jul 20 2015 10:21:35 GMT+0800 (中国标准时间)'
 nor.P2: 1
+PSMD.workshop.zhaoyh: 1
+nor.ZhaoYuhao: 1
+transfer.JT: 2
