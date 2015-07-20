@@ -595,8 +595,11 @@ function postsync(finish) {
 					localPostIdx.update = new Date().toLocaleString();
 					fs.writeFileSync("post/index.yaml",yaml.safeDump(localPostIdx));
 					
-					if ((Object.keys(createtime).length > 0) || (balance == undefined)) {
-						console.log("event postupdate,postfileArray:\n",postfileArray);
+					if (Object.keys(createtime).length > 0) {
+						console.log("event postupdate,createtime:\n",createtime);
+						emitter.emit("postupdate",finish);
+					}else if(balance == undefined) {
+						console.log("event postupdate, init balance...");
 						emitter.emit("postupdate",finish);
 					}else if (typeof(finish) != "undefined") {
 						finish("non post file update");

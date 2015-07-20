@@ -331,7 +331,7 @@ function askandtransfer(){
 	// choice one as payer
 	var payer,payee,amount,passphrase;
 
-	rl.question("\n\n请输入付款人账号(可以输入前几个字母)：\n", function(answer) {
+	rl.question("\n请输入付款人账号(可以输入前几个字母)：\n", function(answer) {
 		for (var fingerprint in secuserinfo) {
 			if (fingerprint.indexOf(answer) == 0){
 				payer = fingerprint;
@@ -343,11 +343,11 @@ function askandtransfer(){
 		}
 		console.log('付款人完整账号：',payer);
 		
-		console.log("可选的收款人:")
+		console.log("\n\n可选的收款人:")
 		for (var key in pubuserinfo) {
 			console.log("账号：\t"+key+"\n户主：\t"+pubuserinfo[key]+"\n余额：\t"+balance[key]+"\n");
 		}
-		rl.question("请输入收款人ID(可以输入前几个字母)：\n", function(answer) {
+		rl.question("\n请输入收款人账号(可以输入前几个字母)：\n", function(answer) {
 			for (var fingerprint in pubuserinfo) {
 				if (fingerprint.indexOf(answer) == 0){
 					payee = fingerprint;
@@ -359,7 +359,7 @@ function askandtransfer(){
 			}
 			console.log('收款人完整账号：',payee);
 
-			rl.question("请输入付款金额：\n", function(answer) {
+			rl.question("\n\n请输入付款金额：\n", function(answer) {
 				var input = Number(answer);
 				if (isNaN(input)) {
 					console.log("金额不对呀");
