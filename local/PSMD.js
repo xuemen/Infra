@@ -250,7 +250,12 @@ function createNor(){
 	rl.question("请输入姓名：\n", function(answer) {
 		name = answer;
 		rl.question("请输入id(英文和字母组成)：\n", function(answer) {
+			if(answer.indexOf(" ") > -1){
+				console.log("id中不能含有空格");
+				process.exit(0);
+			}
 			id = answer;
+
 			rl.question("请输入Email地址：\n", function(answer) {
 				email = answer;
 				rl.question("请输入私钥保护口令(以后经常使用，请务必记住，但不能告诉任何人。)：\n", function(answer) {
@@ -285,8 +290,16 @@ function createAuto(){
 		listener["postupdate"] = "postupdate" ;
 		
 		rl.question("账号户名：\n", function(answer) {
+			if(answer.indexOf(" ") > -1){
+				console.log("账号户名中不能含有空格");
+				process.exit(0);
+			}
 			name = answer;
 			rl.question("创建者：\n", function(answer) {
+				if(answer.indexOf(" ") > -1){
+					console.log("创建者名称中不能含有空格");
+					process.exit(0);
+				}
 				author = answer;
 				rl.close();
 
