@@ -34,13 +34,13 @@ function main (){
 		break;
 		case 8: JoinWorkshop();
 		break;
-		case 9://process.exit(0);
+		case 9:return;
 		break;
 		default:
 		break;
 		
 	}
-	process.exit(0);
+
 }
 
 function listWorkshop(){
@@ -208,9 +208,11 @@ function createCOD(){
 }
 
 function readSyn() {  
+	console.log(process.stdin);
    process.stdin.pause();  
    var response = fs.readSync(process.stdin.fd, 1000, 0, "utf8");  
-   process.stdin.resume();  
+   //var response = fs.readFileSync('/dev/stdin').toString();
+   //process.stdin.resume();  
    return response[0].trim();  
 }  
 
