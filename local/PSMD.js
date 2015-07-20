@@ -12,8 +12,46 @@ infra.postsync(main);
 //createAuto();
 //askandtransfer();
 
+function main () {
+	process.stdin.setEncoding('utf8');
+	process.stdout.setEncoding('utf8');
+	var rl = readline.createInterface({
+	  input: process.stdin,
+	  output: process.stdout
+	});
 
-function main (){
+	var name,id,email,passphrase;
+
+	rl.question("1 创建普通账户\n2 创建自动账户\n3 转账\n4 同步数据\n5 创建COD\n6 设立实训班\n7 列出试训班\n8 报名\n9 退出\n", function(answer) {
+		console.log("answer=",answer);
+		rl.close();
+		switch (parseInt(answer)) {
+			case 1: createNor();
+			break;
+			case 2:createAuto();
+			break;
+			case 3:askandtransfer();
+			break;
+			case 4:infra.postsync();
+			break;
+			case 5:createCOD();
+			break;
+			case 6: createWorkshop();
+			break;
+			case 7: listWorkshop();
+			break;
+			case 8: JoinWorkshop();
+			break;
+			case 9:return;
+			break;
+			default:
+			break;
+			
+		}
+	});
+}
+
+function main1 (){
 	console.log("1 创建普通账户\n2 创建自动账户\n3 转账\n4 同步数据\n5 创建COD\n6 设立实训班\n7 列出试训班\n8 报名\n9 退出");
 	var answer = readSyn();
 	console.log("answer=",answer);
