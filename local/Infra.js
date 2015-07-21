@@ -1,11 +1,14 @@
 var fs = require('fs');
-var yaml = require('js-yaml');
+var events = require('events');
 var http = require('http');
 var https = require('https');
+var path = require("path");
+
+var yaml = require('js-yaml');
 var async = require('async');
 var openpgp = require('openpgp');
 var Hashes = require('jshashes');
-var events = require('events');
+
 
 var emitter = new events.EventEmitter();
 var config = yaml.safeLoad(fs.readFileSync('config.yaml', 'utf8'));
@@ -153,49 +156,6 @@ function createAuto(url,listener,author,name,callback){
 		});
 		
 	});
-}
-
-function listkey(b) {
-	balance = b;
-	secuserinfo = new Object();
-	pubuserinfo = new Object();
-	
-	var files = fs.readdirSync(".");
-	// list the private key
-	files.forEach(function(item) {
-		if (item.substr(item.length-4,4) === '.sec'){
-			var seckey = openpgp.key.readArmored(fs.readFileSync(item,'utf8')).keys[0];
-			secuserinfo[seckey.primaryKey.fingerprint] = seckey.users[0].userId.userid;
-			secfile[seckey.primaryKey.fingerprint] = item;
-		}
-	});
-	
-	files = fs.readdirSync("post/");
-	// list the public key
-	files.forEach(function(item) {
-		if(item.substr(0,4) == "nor."){
-			var nor = yaml.safeLoad(fs.readFileSync("post/"+item,'utf8'));
-			var pubkey = openpgp.key.readArmored(nor.data.pubkey).keys[0];
-			pubuserinfo[pubkey.primaryKey.fingerprint] = pubkey.users[0].userId.userid;
-			pubfile[pubkey.primaryKey.fingerprint] = "post/"+item;
-	}else if((item.substr(item.indexOf(".")+1,5) == "auto.") || (item.substr(0,5) == "auto.")){
-			var auto = yaml.safeLoad(fs.readFileSync("post/"+item,'utf8'));
-			pubuserinfo[auto.data.id] = auto.cod;
-			pubfile[auto.data.id] = "post/"+item;
-		}
-	});
-	
-	console.log("可选的付款人:")
-	for (var key in secuserinfo) {
-		console.log("账号：\t"+key+"\n户主：\t"+secuserinfo[key]+"\n余额：\t"+b[key]+"\n");
-	}
-	
-	console.log("可选的收款人:")
-	for (var key in pubuserinfo) {
-		console.log("账号：\t"+key+"\n户主：\t"+pubuserinfo[key]+"\n余额：\t"+b[key]+"\n");
-	}
-	
-	askandtransfer();
 }
 
 // update balance
@@ -482,8 +442,9 @@ function transfer(payerid,payeeid,amount,passphrase,callback){
 }
 
 // distribute storage
-var localPostIdx = yaml.safeLoad(fs.readFileSync('post/index.yaml', 'utf8'));
-var localPutIdx = yaml.safeLoad(fs.readFileSync('put/index.yaml', 'utf8'));
+var localPostIdx,localPutIdx;
+localindexinit();
+
 var globalPostIdx ,globalPutIdx;
 var postfileArray = new Array() ;
 var putfileArray = new Array() ;
@@ -707,4 +668,50 @@ function getthisHash(){
 	var datahash = new Hashes.SHA512().b64(data.toString())
 	
 	return datahash;
+}
+
+function localindexinit(){
+	mkdirsSync("post",0777);
+	fs.exists("post/index.yaml", function (exists) {
+		if (exists) {
+			localPostIdx = yaml.safeLoad(fs.readFileSync('post/index.yaml', 'utf8'));
+		}else {
+			localPostIdx = new Object();
+			localPostIdx.update = new Date().toLocaleString();
+			fs.writeFileSync("post/index.yaml",yaml.safeDump(localPostIdx));
+		}
+	});
+	
+	mkdirsSync("put",0777);
+	fs.exists("put/index.yaml", function (exists) {
+		if (exists) {
+			localPutIdx = yaml.safeLoad(fs.readFileSync('put/index.yaml', 'utf8'));
+		}else {
+			localPutIdx = new Object();
+			localPutIdx.update = new Date().toLocaleString();
+			fs.writeFileSync("put/index.yaml",yaml.safeDump(localPutIdx));
+		}
+	});
+}
+
+//创建多层文件夹 同步
+function mkdirsSync(dirpath, mode) { 
+    if (!fs.existsSync(dirpath)) {
+        var pathtmp;
+        dirpath.split(path.sep).forEach(function(dirname) {
+            if (pathtmp) {
+                pathtmp = path.join(pathtmp, dirname);
+            }
+            else {
+                pathtmp = dirname;
+            }
+            if (!fs.existsSync(pathtmp)) {
+				console.log("create dir:\t",pathtmp)
+                if (!fs.mkdirSync(pathtmp, mode)) {
+                    return false;
+                }
+            }
+        });
+    }
+    return true; 
 }
