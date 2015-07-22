@@ -30,6 +30,9 @@ exports.postsync = postsync ;
 exports.putsync = putsync ;
 exports.sent = sent ;
 
+
+exports.eventinit = eventinit ;
+
 exports.getthisHash = getthisHash ;
 
 // coop net
@@ -48,7 +51,7 @@ function createCOD(url,listener,author,name,callback){
 			
 			var data = new Object();
 			data.name = name;
-			data.id = new Hashes.SHA512().b64(js.toString());
+			data.id = GetHash(js.toString(),-1);
 			data.codetype = 1;
 			data.codeurl = url;
 			data.listener = listener;
@@ -79,6 +82,7 @@ var pubuserinfo ;
 var secfile ;
 var pubfile ;
 
+updatebalance();
 //postsync();
 
 function createNor(name,id,email,passphrase,callback){
@@ -122,7 +126,7 @@ function createNor(name,id,email,passphrase,callback){
 }
 
 function createAuto(url,listener,author,name,callback){
-	https.get(url,function (response){
+	https.get(url,function (res){
 		var js = ""; 
 		res.setEncoding('utf8');
 
@@ -133,7 +137,7 @@ function createAuto(url,listener,author,name,callback){
 			console.log(js.toString());
 			
 			var data = new Object();
-			data.id = new Hashes.SHA512().b64(js.toString());
+			data.id = GetHash(js.toString(),-1);
 			data.codetype = 1;
 			data.codeurl = url;
 			data.listener = listener;
@@ -199,12 +203,15 @@ function updatebalance(callback) {
 	files.forEach(function(item) {
 		if (item.substr(0,9) == "transfer."){
 			var obj = yaml.safeLoad(fs.readFileSync("post/"+item, 'utf8'));
-			//console.log("\npostfile event obj.data:\n",obj.data);
+			//console.log("\npostfile event item:\n",item);
+			//console.log("\npostfile event obj.sigtype:\n",obj.sigtype);
 			var data ;
 			if(obj.log != undefined){
 				var log = yaml.safeLoad(obj.log);
 				data = yaml.safeLoad(log.data);
-			}else{
+			}else if (obj.sigtype === 0){
+				data = obj.data;
+			}else {
 				data = obj.data;
 				//console.log("postfile event data:\n",data);
 				var msg = openpgp.cleartext.readArmored(data);
@@ -276,8 +283,8 @@ function Issue() {
 	var item = new Object();
 	item.type = 1;
 	item.data = datastr;
-	item.hashtype = 1;
-	item.hash = new Hashes.SHA512().b64(datastr);
+	item.hashtype = -1;
+	item.hash = GetHash(datastr,-1);
 	item.sigtype = 0;
 
 	doc = yaml.safeDump(item);
@@ -317,7 +324,7 @@ function Issue() {
 	req.end();
 }
 
-function CODtransfer(payerid,payeeid,amount){
+function CODtransfer(payerid,payeeid,amount,callback){
 	if(amount > balance[payerid]){
 		console.log("overdraw");
 		return;
@@ -340,47 +347,12 @@ function CODtransfer(payerid,payeeid,amount){
 	
 	var datastr = yaml.safeDump(data);
 	var item = new Object();
-	item.type = 3;
-	item.data = datastr;
-	item.hashtype = 1;
-	item.hash = new Hashes.SHA512().b64(datastr);
+	item.tag = "transfer";
+	item.author = payerid;
 	item.sigtype = 0;
-
-	doc = yaml.safeDump(item);
+	item.data = data;
 	
-	//var authorseckey = payerseckey;
-	var postbody = new Object();
-	
-	postbody.tag = "transfer";
-	postbody.author = payerid;
-	postbody.log = doc;
-	postbody = yaml.safeDump(postbody);
-	
-	console.log(postbody);
-	console.log(postbody.length);
-	//fs.writeFileSync("postbody.yaml",postbody)
-	
-	var options = {
-	  hostname: config.server.url,
-	  port: config.server.port,
-	  method: 'POST',
-	  headers: {
-		'Content-Type': 'application/x-yaml'
-	  }
-	};
-	
-	console.log("sending transfer to server...")
-	var req = http.request(options, function(res) {
-	  console.log('STATUS: ' + res.statusCode);
-	  console.log('HEADERS: ' + JSON.stringify(res.headers));
-	  res.setEncoding('utf8');
-	  res.on('data', function (chunk) {
-		console.log('BODY: ' + chunk);
-	  });
-	});
-
-	req.write(postbody);
-	req.end();
+	sent(item,'POST',callback);
 }
 
 function transfer(payerid,payeeid,amount,passphrase,callback){
@@ -396,8 +368,8 @@ function transfer(payerid,payeeid,amount,passphrase,callback){
 	
 	var payeepubfile = pubfile[payeeid];
 	console.log("transfer payeeid:",payeeid)
-	console.log("transfer pubfile:",pubfile)
-	console.log("transfer payeepubfile:",payeepubfile)
+	//console.log("transfer pubfile:",pubfile)
+	//console.log("transfer payeepubfile:",payeepubfile)
 	var nor = yaml.safeLoad(fs.readFileSync(payeepubfile,'utf8'));
 	//var payeepubkey = openpgp.key.readArmored(nor.data.pubkey).keys[0];
 	
@@ -576,6 +548,9 @@ function postsync(finish) {
 
 
 // distribute event driver
+
+eventinit();
+
 emitter.on("postfile",function(item){
 	console.log("event postfile, item: ",item);
 	if((item.substr(item.indexOf(".")+1,5) == "auto.") || (item.substr(0,5) == "auto.")){
@@ -661,13 +636,89 @@ function existORcreate(obj,id) {
 }
 
 
-function getthisHash(){
-	var filename = process.argv[1];
+function getthisHash(filename){
+	if (filename == undefined){
+		filename = process.argv[1];
+	}
 	console.log("filename:\t",filename)
 	var data = fs.readFileSync(filename);
-	var datahash = new Hashes.SHA512().b64(data.toString())
+	var datahash = GetHash(data.toString(),-1)
 	
 	return datahash;
+}
+
+function GetHash(str,type){
+	var MD5 = new Hashes.MD5;
+	var SHA1 = new Hashes.SHA1;
+	var SHA256 =  new Hashes.SHA256;
+	var SHA512 = new Hashes.SHA512;
+	var RMD160 = new Hashes.RMD160;
+/*
+* hashtype： 哈希算法类型
+	* -1: default, SHA1 hex for now.
+	* 1:MD5 hex
+	* 2:MD5 b64
+	* 3:SHA1 hex
+	* 4:SHA1 b64
+	* 5:SHA256 hex
+	* 6:SHA256 b64
+	* 7:SHA512 hex
+	* 8:SHA512 b64
+	* 9:RIPEMD-160 hex
+	* 10:RIPEMD-160 b64
+*/
+	switch (type) {
+		case 1:
+		return MD5.hex(str);
+		break;
+		case 2:
+		return MD5.b64(str);
+		break;
+		case 3:
+		return SHA1.hex(str);
+		break;
+		case 4:
+		return SHA1.b64(str);
+		break;
+		case 5:
+		return SHA256.hex(str);
+		break;
+		case 6:
+		return SHA256.b64(str);
+		break;
+		case 7:
+		return SHA512.hex(str);
+		break;
+		case 8:
+		return SHA512.b64(str);
+		break;
+		case 9:
+		return RMD160.hex(str);
+		break;
+		case 10:
+		return RMD160.b64(str);
+		break;
+		default:
+		return SHA1.hex(str);
+		break;
+	}
+}
+
+function eventinit() {
+	var files = fs.readdirSync("post/");
+	files.forEach(function(item) {
+		if((item.substr(item.indexOf(".")+1,5) == "auto.") || (item.substr(0,5) == "auto.")){
+			var auto = yaml.safeLoad(fs.readFileSync("post/"+item, 'utf8'));
+			var autofilename = item.substr(0,item.lastIndexOf(".")) + ".js" ;
+			var a = require("./"+autofilename);
+			for (var event in auto.data.listener){
+				var lf = auto.data.listener[event] ;
+				//console.log("a."+lf);
+				emitter.on(event,eval("a."+lf));
+				//console.log(emitter);
+			}
+		}
+	});
 }
 
 function localindexinit(){

@@ -140,8 +140,18 @@ Infra项目从有中心方案启动，每当新方案的去中心化程度更高
 
 ###type
 * hashtype： 哈希算法类型
-	* 1:SHA512
-	* 2:SHA256
+	* -1: default, SHA1 hex for now.
+	* 1:MD5 hex
+	* 2:MD5 b64
+	* 3:SHA1 hex
+	* 4:SHA1 b64
+	* 5:SHA256 hex
+	* 6:SHA256 b64
+	* 7:SHA512 hex
+	* 8:SHA512 b64
+	* 9:RIPEMD-160 hex
+	* 10:RIPEMD-160 b64
+
 * signtype： 数字签名类型
 	* 缺省：没有签名
 	* 0: no sign | 没有签名
