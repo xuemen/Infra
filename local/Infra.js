@@ -384,17 +384,18 @@ function CODtransfer(payerid,payeeid,amount,callback){
 }
 
 function transfer(payerid,payeeid,amount,passphrase,callback){
+	var key = exports.key ;
 	if(amount > exports.key[payerid].balance){
 		console.log("overdraw");
 		return;
 	}
 	
-	var payersecfile = secfile[payerid];
+	var payersecfile = key[payerid].keyprefix + ".sec";
 	//var payerpubfile = payerid + ".pub";
 	var payerseckey = openpgp.key.readArmored(fs.readFileSync(payersecfile,'utf8')).keys[0];
 	//var payerpubkey = openpgp.key.readArmored(fs.readFileSync(payerpubfile,'utf8')).keys[0];
 	
-	var payeepubfile = pubfile[payeeid];
+	var payeepubfile = key[payeeid].norfilename;
 	console.log("transfer payeeid:",payeeid)
 	//console.log("transfer pubfile:",pubfile)
 	//console.log("transfer payeepubfile:",payeepubfile)

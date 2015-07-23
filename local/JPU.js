@@ -6,64 +6,85 @@ var yaml = require('js-yaml');
 
 var config = yaml.safeLoad(fs.readFileSync('config.yaml', 'utf8'));
 
+process.stdin.setEncoding('utf8');
+process.stdout.setEncoding('utf8');
+var rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+    // tab 自动完成
+    completer: function(line) {
+        var completions = 'help createnormal createauto createcod transfer sync issue'.split(' ')
+        var hits = completions.filter(function(c) { return c.indexOf(line) == 0 })
+        return [hits.length ? hits : completions, line]
+    },
+    terminal: true
+});
 
-//infra.postsync(askandtransfer);
-console.log("infra.key:\n",infra.key);
-main();
-//infra.postsync(main);
-//createAuto();
-//askandtransfer();
+// 等待输入
+rl.on('line', function (cmd) {
+    switch(cmd.trim()){
+        case 'help':
+            help();
+            break;
+        case 'createnormal':
+            createNor();
+            break;
+        case 'createauto':
+            createAuto();
+            break;
+        case 'createcod':
+            createCOD();
+            break;
+        case 'transfer':
+            askandtransfer();
+            break;
+        case 'sync':
+            infra.postsync();
+            break;
+        case 'issue':
+            infra.Issue();
+            break;
+        default:
+            console.log(cmd.trim());
+    }
+    rl.prompt(true);
+});
 
-function main () {
-	process.stdin.setEncoding('utf8');
-	process.stdout.setEncoding('utf8');
-	var rl = readline.createInterface({
-	  input: process.stdin,
-	  output: process.stdout
-	});
+// Ctrl + c
+rl.on('SIGINT', function() {
+    rl.question('Sure to exit ? ', function(answer) {
+        if (answer.match(/^y(es)?$/i)) {
+            rl.pause();
+        }else {
+            rl.prompt(true);
+        }
+    });
+});
+ 
+// Ctrl + d
+rl.on('close', function() {
+    console.log('欢迎再次使用 JPU 客户端!');
+    process.exit(0);
+});
 
-	var secuserinfo = infra.secuserinfo;
-	var pubuserinfo = infra.pubuserinfo;
-	var balance = infra.balance;
+// 设置命令提示符
+rl.setPrompt('JPU> ');
+// 给我提示
+help();
+rl.prompt(true);
 
-	console.log("本地账户:")
-	for (var key in secuserinfo) {
-		console.log("账号：\t"+key+"\n户主：\t"+secuserinfo[key]+"\n余额：\t"+balance[key]+"\n");
-	}
-
-	rl.question("\n请输入指令：\n1 创建普通账户\n2 创建自动账户\n3 转账\n4 同步数据\n5 创建COD\n9 发行\n0 退出\n", function(answer) {
-		console.log("answer=",answer);
-		rl.close();
-		switch (parseInt(answer)) {
-			case 1: createNor();
-			break;
-			case 2:createAuto();
-			break;
-			case 3:askandtransfer();
-			break;
-			case 4:infra.postsync();
-			break;
-			case 5:createCOD();
-			break;
-			case 9: infra.Issue();
-			break;
-			case 0:return;
-			break;
-			default:
-			break;
-			
-		}
-	});
+function help() {
+	console.log("help:\t\t显示帮助");
+	console.log("createnormal:\t创建普通账号");
+	console.log("createauto:\t创建自动账号");
+	console.log("createcod:\t创建COD");
+	console.log("transfer:\t转账");
+	console.log("sync:\t\t同步数据");
+	console.log("issue:\t\t发行");
+	console.log("ctrl-c:\t\t退出");
 }
 
 function createCOD(){
-	process.stdin.setEncoding('utf8');
-	process.stdout.setEncoding('utf8');
-	var rl = readline.createInterface({
-	  input: process.stdin,
-	  output: process.stdout
-	});
-
 	var url,listener,author,name;
 
 	rl.question("请输入代码URL：\n", function(answer) {
@@ -76,7 +97,7 @@ function createCOD(){
 			name = answer;
 			rl.question("创建者：\n", function(answer) {
 				author = answer;
-				rl.close();
+				//rl.close();
 
 				infra.createCOD(url,listener,author,name,function(retstr){
 					console.log(retstr," 已创建.")
@@ -87,13 +108,6 @@ function createCOD(){
 }
 
 function createNor(){
-	process.stdin.setEncoding('utf8');
-	process.stdout.setEncoding('utf8');
-	var rl = readline.createInterface({
-	  input: process.stdin,
-	  output: process.stdout
-	});
-
 	var name,id,email,passphrase;
 
 	rl.question("请输入姓名：\n", function(answer) {
@@ -109,7 +123,7 @@ function createNor(){
 				email = answer;
 				rl.question("请输入私钥保护口令(以后经常使用，请务必记住，但不能告诉任何人。)：\n", function(answer) {
 					passphrase = answer;
-					rl.close();
+					//rl.close();
 
 					infra.createNor(name,id,email,passphrase,function(retstr){
 						console.log(retstr," 已创建.");
@@ -122,13 +136,6 @@ function createNor(){
 }
 
 function createAuto(){
-	process.stdin.setEncoding('utf8');
-	process.stdout.setEncoding('utf8');
-	var rl = readline.createInterface({
-	  input: process.stdin,
-	  output: process.stdout
-	});
-
 	var url,listener,author,name;
 
 	rl.question("请输入代码URL：\n", function(answer) {
@@ -149,7 +156,7 @@ function createAuto(){
 					process.exit(0);
 				}
 				author = answer;
-				rl.close();
+				//rl.close();
 
 				infra.createAuto(url,listener,author,name,function(retstr){
 					console.log(retstr," 已创建.")
@@ -160,29 +167,21 @@ function createAuto(){
 }
 
 function askandtransfer(){
-	var secuserinfo = infra.secuserinfo;
-	var pubuserinfo = infra.pubuserinfo;
-	var balance = infra.balance;
+	var key = infra.key;
 
 	console.log("可选的付款人:")
-	for (var key in secuserinfo) {
-		console.log("账号：\t"+key+"\n户主：\t"+secuserinfo[key]+"\n余额：\t"+balance[key]+"\n");
+	for (var id in key) {
+		if (key[id].hasOwnProperty("keyprefix")) {
+			console.log("账号：\t"+id+"\n户主：\t"+key[id].owner+"\n余额：\t"+key[id].balance+"\n");
+		}
 	}
-	
-	
-	process.stdin.setEncoding('utf8');
-	process.stdout.setEncoding('utf8');
-	var rl = readline.createInterface({
-	  input: process.stdin,
-	  output: process.stdout
-	});
 	// choice one as payer
 	var payer,payee,amount,passphrase;
 
 	rl.question("\n请输入付款人账号(可以输入前几个字母)：\n", function(answer) {
-		for (var fingerprint in secuserinfo) {
-			if (fingerprint.indexOf(answer) == 0){
-				payer = fingerprint;
+		for (var id in key) {
+			if (id.indexOf(answer) == 0){
+				payer = id;
 			}
 		}
 		if(payer == undefined){
@@ -192,13 +191,13 @@ function askandtransfer(){
 		console.log('付款人完整账号：',payer);
 		
 		console.log("\n\n可选的收款人:")
-		for (var key in pubuserinfo) {
-			console.log("账号：\t"+key+"\n户主：\t"+pubuserinfo[key]+"\n余额：\t"+balance[key]+"\n");
+		for (var id in key) {
+			console.log("账号：\t"+id+"\n户主：\t"+key[id].owner+"\n余额：\t"+key[id].balance+"\n");
 		}
 		rl.question("\n请输入收款人账号(可以输入前几个字母)：\n", function(answer) {
-			for (var fingerprint in pubuserinfo) {
-				if (fingerprint.indexOf(answer) == 0){
-					payee = fingerprint;
+			for (var id in key) {
+				if (id.indexOf(answer) == 0){
+					payee = id;
 				}
 			}
 			if(payee == undefined){
@@ -214,15 +213,14 @@ function askandtransfer(){
 				} else {
 					amount = input;
 					
-					if(balance[payer] < amount) {
+					if(key[payer].balance < amount) {
 						console.log("余额不足。");
-						//return;
-						process.exit()
+						return;
 					};
 
 					rl.question("请输入付款人私钥口令：\n", function(answer) {
 						passphrase = answer;
-						rl.close();
+						//rl.close();
 						
 						infra.transfer(payer,payee,amount,passphrase);
 					});
