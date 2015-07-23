@@ -36,6 +36,8 @@ exports.eventinit = eventinit ;
 
 exports.getthisHash = getthisHash ;
 
+init();
+
 // coop net
 function getCODlist(){
 	
@@ -77,15 +79,6 @@ function createCOD(url,listener,author,name,callback){
 	});
 }
 // Joint Token
-var balance ;
-var secuserinfo ;
-var pubuserinfo ;
-var secfile ;
-var pubfile ;
-
-updatebalance();
-//postsync();
-
 function readKey() {
 	var key = new Object();
 	
@@ -125,7 +118,7 @@ function readKey() {
 }
 
 function importNor(){
-	var key = readKey();
+	var key = exports.key;
 	
 	for (var id in key) {
 		if (!key[id].hasOwnProperty("norfilename")) {
@@ -155,7 +148,7 @@ function importNor(){
 				console.log("sent key callback:\n",key[id],key[vid]);
 				fs.renameSync(key[vid].keyprefix+".pub",retstr+".pub");
 				fs.renameSync(key[vid].keyprefix+".sec",retstr+".sec");
-				key[vid].pubfilename = "post/"+retstr+".yaml";
+				key[vid].norfilename = "post/"+retstr+".yaml";
 				key[vid].keyprefix = retstr;
 
 				if (typeof(callback) != "undefined") {
@@ -164,9 +157,11 @@ function importNor(){
 			});
 		}
 	}
+	
+	//console.log("importkey:\n",key);
+	exports.key = key ;
+	return key ;
 }
-
-
 
 function createNor(name,id,email,passphrase,callback){
 	var UserId = name + " (" + id + ") <" + email + ">" ;
@@ -245,105 +240,55 @@ function createAuto(url,listener,author,name,callback){
 	});
 }
 
-// update balance
-emitter.on("postupdate",updatebalance)
-
 function updatebalance(callback) {
-	balance = new Object();
-	secuserinfo = new Object();
-	pubuserinfo = new Object();
-	secfile = new Object();
-	pubfile = new Object();
-
-	var files = fs.readdirSync(".");
-	// list the private key
-	files.forEach(function(item) {
-		if (item.substr(item.length-4,4) === '.sec'){
-			var seckey = openpgp.key.readArmored(fs.readFileSync(item,'utf8')).keys[0];
-			secuserinfo[seckey.primaryKey.fingerprint] = seckey.users[0].userId.userid;
-			secfile[seckey.primaryKey.fingerprint] = item;
-		}
-	});
-
-	files = fs.readdirSync("post/");
-
-	files.forEach(function(item) {
-		if(item.substr(0,4) == "nor."){
-			var nor = yaml.safeLoad(fs.readFileSync("post/"+item,'utf8'));
-			var pubkey = openpgp.key.readArmored(nor.data.pubkey).keys[0];
-			pubuserinfo[pubkey.primaryKey.fingerprint] = pubkey.users[0].userId.userid;
-			pubfile[pubkey.primaryKey.fingerprint] = "post/"+item;
-			existORcreate(balance,pubkey.primaryKey.fingerprint);
-		}else if((item.substr(item.indexOf(".")+1,5) == "auto.") || (item.substr(0,5) == "auto.")){
-			var auto = yaml.safeLoad(fs.readFileSync("post/"+item,'utf8'));
-			pubuserinfo[auto.data.id] = auto.cod;
-			pubfile[auto.data.id] = "post/"+item;
-			existORcreate(balance,auto.data.id);
-		}
-	});
+	var key = exports.key;
 	
-	//files = fs.readdirSync("post/");
+	var files = fs.readdirSync("post/");
 	files.forEach(function(item) {
 		if (item.substr(0,9) == "transfer."){
 			var obj = yaml.safeLoad(fs.readFileSync("post/"+item, 'utf8'));
-			//console.log("\npostfile event item:\n",item);
-			//console.log("\npostfile event obj.sigtype:\n",obj.sigtype);
+			//console.log("\npostupdate event item:\n",item);
 			var data ;
 			if(obj.log != undefined){
 				var log = yaml.safeLoad(obj.log);
 				data = yaml.safeLoad(log.data);
-			}else if (obj.sigtype === 0){
+			}else if (obj.sigtype == 0){
 				data = obj.data;
-			}else {
+			}else if (obj.sigtype == 2){
 				data = obj.data;
-				//console.log("postfile event data:\n",data);
 				var msg = openpgp.cleartext.readArmored(data);
-				//console.log("postfile event msg:\n",msg);
-				//console.log("postfile event msg text:\n",msg.text);
-				//console.log("postfile event msg getText:\n",msg.getText());
-				
 				var author = obj.author ;
-				//console.log("author",author);
-				//console.log("pubfile author",pubfile[author]);
-				var nor = yaml.safeLoad(fs.readFileSync(pubfile[author],'utf8'));
+				var nor = yaml.safeLoad(fs.readFileSync(key[author].norfilename,'utf8'));
 				var pubkeys = openpgp.key.readArmored(nor.data.pubkey).keys;
 				var pubkey = pubkeys[0];
-				//console.log("pubkey author pubkeys\n",pubkeys);
-				//console.log("pubkey author pubkey\n]",pubkey);
 				var result = msg.verify(pubkeys);
-				//console.log("verify result",result);
-				//console.log("verify result.keyid",result[0].keyid);
-				//console.log("verify result.valid",result[0].valid);
-
 				data = yaml.safeLoad(msg.text);
 			}
-			
 			if(data.hasOwnProperty("input")) {
 				var input = data.input;
 				var id = input.id;
 				var amount = input.amount;
-				existORcreate(balance,id);
-				balance[id] = balance[id] - amount;
+				existORcreate(key[id],"balance");
+				key[id].balance = key[id].balance - amount;
 			}
 			
 			if(data.hasOwnProperty("output")) {
 				var output = data.output;
-				id = output.id;
-				amount = output.amount;
-				existORcreate(id);
-				balance[id] = balance[id] + amount;
+				var id = output.id;
+				var amount = output.amount;
+				existORcreate(key[id],"balance");
+				key[id].balance = key[id].balance + amount;
 			}
 		}
 	});
-	exports.secfile = secfile;
-	exports.pubfile = pubfile;
-	exports.secuserinfo = secuserinfo;
-	exports.pubuserinfo = pubuserinfo;
-	exports.balance = balance;
-	//console.log("new balance: \n",balance);
+	
 	if (typeof(callback) != "undefined") {
-		callback(balance);
+		callback(key);
 	}
+	//console.log("updatebalance key:\n",key);
+	exports.key = key ;
+
+	return key ;
 }
 
 function Issue() {
@@ -408,7 +353,7 @@ function Issue() {
 }
 
 function CODtransfer(payerid,payeeid,amount,callback){
-	if(amount > balance[payerid]){
+	if(amount > exports.key[payerid].balance){
 		console.log("overdraw");
 		return;
 	}
@@ -439,7 +384,7 @@ function CODtransfer(payerid,payeeid,amount,callback){
 }
 
 function transfer(payerid,payeeid,amount,passphrase,callback){
-	if(amount > balance[payerid]){
+	if(amount > exports.key[payerid].balance){
 		console.log("overdraw");
 		return;
 	}
@@ -498,8 +443,6 @@ function transfer(payerid,payeeid,amount,passphrase,callback){
 
 // distribute storage
 var localPostIdx,localPutIdx;
-localindexinit();
-
 var globalPostIdx ,globalPutIdx;
 var postfileArray = new Array() ;
 var putfileArray = new Array() ;
@@ -614,9 +557,6 @@ function postsync(finish) {
 					if (Object.keys(createtime).length > 0) {
 						console.log("event postupdate,createtime:\n",createtime);
 						emitter.emit("postupdate",finish);
-					}else if(balance == undefined) {
-						console.log("event postupdate, init balance...");
-						emitter.emit("postupdate",finish);
 					}else if (typeof(finish) != "undefined") {
 						finish("non post file update");
 					}
@@ -628,12 +568,10 @@ function postsync(finish) {
 	});
 }
 
+emitter.on("postupdate",updatebalance)
 
 
 // distribute event driver
-
-eventinit();
-
 emitter.on("postfile",function(item){
 	console.log("event postfile, item: ",item);
 	if((item.substr(item.indexOf(".")+1,5) == "auto.") || (item.substr(0,5) == "auto.")){
@@ -691,9 +629,20 @@ emitter.on("postfile",function(item){
 
 // data management
 function deploy() {
-	
+	localindexinit();
+	readKey();
+	importNor();
+	postsync();
 }
 
+function init() {
+	localindexinit();
+	readKey();
+	updatebalance();
+	eventinit();
+
+	postsync();
+}
 
 //utility
 

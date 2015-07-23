@@ -155,8 +155,8 @@ Infra项目从有中心方案启动，每当新方案的去中心化程度更高
 * signtype： 数字签名类型
 	* 缺省：没有签名
 	* 0: no sign | 没有签名
-	* 1: openpgp clear
-	* 2: openpgp detach
+	* 1: openpgp detach
+	* 2: openpgp clear
 - keytype: 密钥类型。
 	- 1:rsa
 	- 2:openpgp

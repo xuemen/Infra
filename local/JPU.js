@@ -8,7 +8,8 @@ var config = yaml.safeLoad(fs.readFileSync('config.yaml', 'utf8'));
 
 
 //infra.postsync(askandtransfer);
-infra.importNor();
+console.log("infra.key:\n",infra.key);
+main();
 //infra.postsync(main);
 //createAuto();
 //askandtransfer();
