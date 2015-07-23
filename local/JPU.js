@@ -8,7 +8,8 @@ var config = yaml.safeLoad(fs.readFileSync('config.yaml', 'utf8'));
 
 
 //infra.postsync(askandtransfer);
-infra.postsync(main);
+infra.importNor();
+//infra.postsync(main);
 //createAuto();
 //askandtransfer();
 
@@ -118,7 +119,6 @@ function createNor(){
 		});
 	});
 }
-
 
 function createAuto(){
 	process.stdin.setEncoding('utf8');

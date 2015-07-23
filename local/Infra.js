@@ -19,6 +19,7 @@ exports.getCODlist = getCODlist ;
 exports.getCODObj = getCODObj ;
 exports.createCOD = createCOD ;
 
+exports.importNor = importNor ;
 exports.createNor = createNor ;
 exports.createAuto = createAuto ;
 exports.updatebalance = updatebalance ;
@@ -84,6 +85,88 @@ var pubfile ;
 
 updatebalance();
 //postsync();
+
+function readKey() {
+	var key = new Object();
+	
+	var files = fs.readdirSync(".");
+	files.forEach(function(item) {
+		if (item.substr(item.length-4,4) === '.sec'){
+			var seckey = openpgp.key.readArmored(fs.readFileSync(item,'utf8')).keys[0];
+			existORcreateObj(key,seckey.primaryKey.fingerprint);
+			key[seckey.primaryKey.fingerprint].owner = seckey.users[0].userId.userid;
+			key[seckey.primaryKey.fingerprint].keyprefix = item.substr(0,item.length-4);
+			existORcreate(key[seckey.primaryKey.fingerprint],"balance");
+		}
+	});
+
+	files = fs.readdirSync("post/");
+
+	files.forEach(function(item) {
+		if(item.substr(0,4) == "nor."){
+			var nor = yaml.safeLoad(fs.readFileSync("post/"+item,'utf8'));
+			var pubkey = openpgp.key.readArmored(nor.data.pubkey).keys[0];
+			existORcreateObj(key,pubkey.primaryKey.fingerprint);
+			key[pubkey.primaryKey.fingerprint].owner = pubkey.users[0].userId.userid;
+			key[pubkey.primaryKey.fingerprint].norfilename = "post/"+item;
+			existORcreate(key[pubkey.primaryKey.fingerprint],"balance");
+		}else if((item.substr(item.indexOf(".")+1,5) == "auto.") || (item.substr(0,5) == "auto.")){
+			var auto = yaml.safeLoad(fs.readFileSync("post/"+item,'utf8'));
+			existORcreateObj(key,auto.data.id);
+			key[auto.data.id].owner = auto.cod;
+			key[auto.data.id].norfilename = "post/"+item;
+			existORcreate(key[auto.data.id],"balance");
+		}
+	});
+	
+	//console.log("readkey:\n",key);
+	exports.key = key ;
+	return key ;
+}
+
+function importNor(){
+	var key = readKey();
+	
+	for (var id in key) {
+		if (!key[id].hasOwnProperty("norfilename")) {
+			console.log("import key:\n",key[id]);
+			var vid = id;
+			//var seckeyArmored = fs.readFileSync(key[id].keyprefix+".sec",'utf8');
+			var seckey = openpgp.key.readArmored(fs.readFileSync(key[id].keyprefix+".sec",'utf8')).keys[0];
+			//var pubfilename = key[id].secfilename.substr(0,key[id].secfilename.length-4)+".pub" ;
+			var pubkeyArmored = fs.readFileSync(key[id].keyprefix+".pub",'utf8');
+			var owner = key[id].owner;
+			var ownerid = owner.substr(owner.indexOf("(")+1,owner.indexOf(")")-owner.indexOf("(")-1) ;
+			
+			var data = new Object();
+			data.id = seckey.primaryKey.fingerprint;
+			data.keytype = 2;
+			data.pubkey = pubkeyArmored;
+			data.createtime =  new Date().getTime();//Date.parse(key.key.primaryKey.created);
+			data.remark = "Import Normal Account";
+			
+			var item = new Object();
+			item.tag = "nor";
+			item.author = ownerid;
+			item.data = data;
+			item.sigtype = 0;
+			
+			sent(item,'POST',function (retstr){
+				console.log("sent key callback:\n",key[id],key[vid]);
+				fs.renameSync(key[vid].keyprefix+".pub",retstr+".pub");
+				fs.renameSync(key[vid].keyprefix+".sec",retstr+".sec");
+				key[vid].pubfilename = "post/"+retstr+".yaml";
+				key[vid].keyprefix = retstr;
+
+				if (typeof(callback) != "undefined") {
+					callback(balance);
+				}
+			});
+		}
+	}
+}
+
+
 
 function createNor(name,id,email,passphrase,callback){
 	var UserId = name + " (" + id + ") <" + email + ">" ;
@@ -606,6 +689,11 @@ emitter.on("postfile",function(item){
 })
 
 
+// data management
+function deploy() {
+	
+}
+
 
 //utility
 
@@ -635,6 +723,12 @@ function existORcreate(obj,id) {
 	}
 }
 
+function existORcreateObj(obj,id) {
+	//console.log(id);
+	if (!obj.hasOwnProperty(id)) {
+		obj[id] = new Object();
+	}
+}
 
 function getthisHash(filename){
 	if (filename == undefined){
