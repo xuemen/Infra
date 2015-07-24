@@ -371,7 +371,7 @@ function CODtransfer(payerid,payeeid,amount,callback){
 	data.total = amount;
 	data.time =  new Date().getTime();//new Date().toLocaleString();
 	data.remark = "cod transfer sample";
-	console.log(data);
+	//console.log(data);
 	
 	var datastr = yaml.safeDump(data);
 	var item = new Object();
@@ -396,7 +396,7 @@ function transfer(payerid,payeeid,amount,passphrase,callback){
 	//var payerpubkey = openpgp.key.readArmored(fs.readFileSync(payerpubfile,'utf8')).keys[0];
 	
 	var payeepubfile = key[payeeid].norfilename;
-	console.log("transfer payeeid:",payeeid)
+	//console.log("transfer payeeid:",payeeid)
 	//console.log("transfer pubfile:",pubfile)
 	//console.log("transfer payeepubfile:",payeepubfile)
 	var nor = yaml.safeLoad(fs.readFileSync(payeepubfile,'utf8'));
@@ -416,7 +416,7 @@ function transfer(payerid,payeeid,amount,passphrase,callback){
 	data.total = amount;
 	data.time =  new Date().getTime();//new Date().toLocaleString();
 	data.remark = "transfer sample";
-	console.log(data);
+	//console.log(data);
 	
 	var datastr = yaml.safeDump(data);
 	var item = new Object();
@@ -431,7 +431,7 @@ function transfer(payerid,payeeid,amount,passphrase,callback){
 		//console.log("infra.transfer:",data);
 		openpgp.signClearMessage(payerseckey,datastr).then(function(pgpMessage){
 			// success
-			console.log(pgpMessage);
+			//console.log(pgpMessage);
 			item.data = pgpMessage;
 			
 			sent(item,'POST',callback);
@@ -462,12 +462,12 @@ function sent(item,method,callback){
 	console.log("sending account to server...\n");
 
 	var req = http.request(options, function(res) {
-	  console.log('STATUS: ' + res.statusCode);
-	  console.log('HEADERS: ' + JSON.stringify(res.headers));
+	  //console.log('STATUS: ' + res.statusCode);
+	  //console.log('HEADERS: ' + JSON.stringify(res.headers));
 	  res.setEncoding('utf8');
 
 	  res.on('data', function (chunk) {
-		console.log('BODY: ' + chunk);
+		console.log('response BODY: ' + chunk);
 		if (typeof(callback) != "undefined") {
 			callback(chunk);
 		}
@@ -567,7 +567,7 @@ emitter.on("postsync",postsync);
 
 // distribute event driver
 emitter.on("postfile",function(item){
-	console.log("event postfile, item: ",item);
+	//console.log("event postfile, item: ",item);
 	fs.writeFileSync(item.path+item.filename,item.content);
 	
 	if((item.filename.substr(item.filename.indexOf(".")+1,5) == "auto.") || (item.filename.substr(0,5) == "auto.")){
@@ -657,7 +657,7 @@ emitter.on("postfile",function(item){
 			key[id].balance = key[id].balance + amount;
 		}
 	}
-	console.log("postfile finish, key:",key);
+	//console.log("postfile finish, key:",key);
 	exports.key = key;
 })
 
