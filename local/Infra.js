@@ -506,21 +506,18 @@ function postsync(finish) {
 				//console.log(globalPostIdx[key]);
 				if (localPostIdx[key] < globalPostIdx[key]){
 					for (var id = localPostIdx[key]+1;id <= globalPostIdx[key];id++) {
-						console.log("key:\t"+key+"\tid:\t"+id);
-						
+						console.log("\npostsync file:\t",key+"."+id.toString()+".yaml");
 						postfileArray.push(key+"."+id.toString()+".yaml") ;
 					}
 					localPostIdx[key] = globalPostIdx[key];
 				}
 			}
-			
-			//console.log(postfileArray);
-			
-			var createtime = new Object();
+			//var createtime = new Object();
+			var updatefile = new Object();
 			
 			async.each(postfileArray, function (item, callback) {
 				var fileaddr = "http://"+config.server.url+":"+config.server.port+'/post/'+item;
-				var filename = "post/"+item;
+				//var filename = "post/"+item;
 				var req = http.get(fileaddr, function(res) {
 					var chunk = ""; 
 					res.setEncoding('utf8');
@@ -529,13 +526,15 @@ function postsync(finish) {
 					  chunk += data ;
 					});
 					res.on('end', function(){
-						fs.writeFileSync(filename,chunk);
-						console.log("post: "+filename+" saved.");
-						
-						// parse the yaml and get the createat field
-						// write into a object: [createat]filename
+						//fs.writeFileSync(filename,chunk);
+						//console.log("post: "+filename+" saved.");
 						var itemdata = yaml.safeLoad(chunk);
-						createtime[itemdata.createat] = item ;
+						
+						//existORcreateObj(updatefile,itemdata.createat);
+						updatefile[itemdata.createat] = new Object();
+						updatefile[itemdata.createat].path = "post/";
+						updatefile[itemdata.createat].filename = item;
+						updatefile[itemdata.createat].content = chunk;
 						
 						callback();
 					});
@@ -547,20 +546,13 @@ function postsync(finish) {
 					console.log('post:A file failed to save');
 				} else {
 					// sort the object and emit event one by one
-					var sortedcreatetime = sortObject(createtime);
-					for (var time in sortedcreatetime) {
-						var item = sortedcreatetime[time];
+					var sortupdatefile = sortObject(updatefile);
+					for (var time in sortupdatefile) {
+						var item = sortupdatefile[time];
 						emitter.emit("postfile",item);
 					}
 					localPostIdx.update = new Date().toLocaleString();
 					fs.writeFileSync("post/index.yaml",yaml.safeDump(localPostIdx));
-					
-					if (Object.keys(createtime).length > 0) {
-						console.log("event postupdate,createtime:\n",createtime);
-						emitter.emit("postupdate",finish);
-					}else if (typeof(finish) != "undefined") {
-						finish("non post file update");
-					}
 				}
 			});
 		});
@@ -569,15 +561,17 @@ function postsync(finish) {
 	});
 }
 
-emitter.on("postupdate",updatebalance)
+//emitter.on("postupdate",updatebalance)
 
 
 // distribute event driver
 emitter.on("postfile",function(item){
 	console.log("event postfile, item: ",item);
-	if((item.substr(item.indexOf(".")+1,5) == "auto.") || (item.substr(0,5) == "auto.")){
-		var auto = yaml.safeLoad(fs.readFileSync("post/"+item, 'utf8'));
-		var autofilename = item.substr(0,item.lastIndexOf(".")) + ".js" ;
+	fs.writeFileSync(item.path+item.filename,item.content);
+	
+	if((item.filename.substr(item.filename.indexOf(".")+1,5) == "auto.") || (item.filename.substr(0,5) == "auto.")){
+		var auto = yaml.safeLoad(item.content);
+		var autofilename = item.filename.substr(0,item.filename.lastIndexOf(".")) + ".js" ;
 		
 		console.log("new auto account: download "+auto.data.codeurl+" and saved as "+autofilename);
 		var autoget = https.get(auto.data.codeurl,function(res) {
@@ -600,9 +594,9 @@ emitter.on("postfile",function(item){
 			});
 		});
 	}
-	if((item.substr(item.indexOf(".")+1,7) == "deploy.") || (item.substr(0,7) == "deploy.")){
-		var cod = yaml.safeLoad(fs.readFileSync("post/"+item, 'utf8'));
-		var codfilename = item.substr(0,item.lastIndexOf(".")) + ".js" ;
+	if((item.filename.substr(item.filename.indexOf(".")+1,7) == "deploy.") || (item.filename.substr(0,7) == "deploy.")){
+		var cod = yaml.safeLoad(item.content);
+		var codfilename = item.filename.substr(0,item.filename.lastIndexOf(".")) + ".js" ;
 		
 		console.log("new cod account: download "+cod.data.codeurl+" and saved as "+codfilename);
 		var codget = https.get(cod.data.codeurl,function(res) {
@@ -625,6 +619,45 @@ emitter.on("postfile",function(item){
 			});
 		});
 	}
+	
+	var key = exports.key;
+	if (item.filename.substr(0,9) == "transfer."){
+		var obj = yaml.safeLoad(item.content);
+		//console.log("\npostupdate event item:\n",item);
+		var data ;
+		if(obj.log != undefined){
+			var log = yaml.safeLoad(obj.log);
+			data = yaml.safeLoad(log.data);
+		}else if (obj.sigtype == 0){
+			data = obj.data;
+		}else if (obj.sigtype == 2){
+			data = obj.data;
+			var msg = openpgp.cleartext.readArmored(data);
+			var author = obj.author ;
+			var nor = yaml.safeLoad(fs.readFileSync(key[author].norfilename,'utf8'));
+			var pubkeys = openpgp.key.readArmored(nor.data.pubkey).keys;
+			var pubkey = pubkeys[0];
+			var result = msg.verify(pubkeys);
+			data = yaml.safeLoad(msg.text);
+		}
+		if(data.hasOwnProperty("input")) {
+			var input = data.input;
+			var id = input.id;
+			var amount = input.amount;
+			existORcreate(key[id],"balance");
+			key[id].balance = key[id].balance - amount;
+		}
+		
+		if(data.hasOwnProperty("output")) {
+			var output = data.output;
+			var id = output.id;
+			var amount = output.amount;
+			existORcreate(key[id],"balance");
+			key[id].balance = key[id].balance + amount;
+		}
+	}
+	console.log("postfile finish, key:",key);
+	exports.key = key;
 })
 
 
