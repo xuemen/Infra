@@ -459,7 +459,7 @@ function sent(item,method,callback){
 	  }
 	};
 	
-	console.log("sending account to server...\n",options);
+	console.log("sending account to server...\n");
 
 	var req = http.request(options, function(res) {
 	  console.log('STATUS: ' + res.statusCode);
@@ -471,6 +471,7 @@ function sent(item,method,callback){
 		if (typeof(callback) != "undefined") {
 			callback(chunk);
 		}
+		emitter.emit("postsync");
 	  });
 	});
 	
@@ -562,7 +563,7 @@ function postsync(finish) {
 }
 
 //emitter.on("postupdate",updatebalance)
-
+emitter.on("postsync",postsync);
 
 // distribute event driver
 emitter.on("postfile",function(item){
@@ -717,7 +718,7 @@ function getthisHash(filename){
 	if (filename == undefined){
 		filename = process.argv[1];
 	}
-	console.log("filename:\t",filename)
+	console.log("getthisHash filename:\t",filename)
 	var data = fs.readFileSync(filename);
 	var datahash = GetHash(data.toString(),-1)
 	
