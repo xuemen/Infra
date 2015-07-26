@@ -1,7 +1,0 @@
-- name: ITW
-  codetype: 1
-  codeurl: https://raw.githubusercontent.com/xuemen/Infra/431933ac94d0bc0701291f3f6905d130b48cb521/server/ITW.js
-  event:
-    ticket1: t1
-    ticker2: t2
-  remark: Information Technology Workshop
