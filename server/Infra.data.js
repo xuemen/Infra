@@ -5,8 +5,29 @@ var http = require('http');
 var url = require("url"),
 	yaml = require('js-yaml');
 
-var PutIdx = yaml.safeLoad(fs.readFileSync('put/index.yaml', 'utf8'));
-var PostIdx = yaml.safeLoad(fs.readFileSync('post/index.yaml', 'utf8'));
+var PostIdx,PutIdx;
+	
+if (!fs.existsSync("post")) {
+	fs.mkdirSync("post", 0777)
+};
+if (fs.existsSync("post/index.yaml")) {
+	PostIdx = yaml.safeLoad(fs.readFileSync('post/index.yaml', 'utf8'));
+}else {
+	PostIdx = new Object();
+	PostIdx.update = new Date().toLocaleString();
+	fs.writeFileSync("post/index.yaml",yaml.safeDump(PostIdx));
+};
+
+if (!fs.existsSync("put")) {
+	fs.mkdirSync("put", 0777)
+};
+if (fs.existsSync("put/index.yaml")) {
+	PutIdx = yaml.safeLoad(fs.readFileSync('put/index.yaml', 'utf8'));
+}else {
+	PutIdx = new Object();
+	PutIdx.update = new Date().toLocaleString();
+	fs.writeFileSync("put/index.yaml",yaml.safeDump(PutIdx));
+};
 
 var server = http.createServer(function (req, res) {
 	var chunk = ""; 
