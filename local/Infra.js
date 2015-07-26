@@ -390,6 +390,7 @@ function transfer(payerid,payeeid,amount,passphrase,callback){
 		return;
 	}
 	
+	console.log("transfer key:",key);
 	var payersecfile = key[payerid].keyprefix + ".sec";
 	//var payerpubfile = payerid + ".pub";
 	var payerseckey = openpgp.key.readArmored(fs.readFileSync(payersecfile,'utf8')).keys[0];
