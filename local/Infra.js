@@ -197,7 +197,7 @@ function createNor(name,id,email,passphrase,callback){
 			fs.writeFileSync(retstr+".sec",key.privateKeyArmored);
 			
 			if (typeof(callback) != "undefined") {
-				callback(balance);
+				callback(retstr);
 			}
 		});
 	});
