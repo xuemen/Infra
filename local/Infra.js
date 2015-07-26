@@ -555,7 +555,7 @@ function sentlocal(item,callback){
 			item.createat = new Date().getTime();
 			fs.writeFile(filename,yaml.safeDump(item),function(err){
 				if(err) throw err;
-				console.log("local: "+filename+" saved.",new Date().toLocaleString());
+				console.log("local:",filename);
 				
 				//localIdx[key] = localIdx[key] + 1;
 				localIdx.update = new Date().toLocaleString();
@@ -713,7 +713,7 @@ function postupdate(ReverseArray){
 		return;
 	}
 	var item = ReverseArray.pop();
-	console.log("event postfile, file: ",item.path+item.filename);
+	console.log("update file: ",item.path+item.filename);
 	fs.writeFileSync(item.path+item.filename,item.content);
 	
 	var key = exports.key;
@@ -746,11 +746,11 @@ function postupdate(ReverseArray){
 				fs.writeFileSync(autofilename,chunk);
 
 				existORcreateObj(key,auto.data.id);
-				console.log("auto account downloaded:",key[auto.data.id]);
+				//console.log("auto account downloaded:",key[auto.data.id]);
 				key[auto.data.id].owner = auto.cod;
 				key[auto.data.id].norfilename = item.filename;
 				existORcreate(key[auto.data.id],"balance");
-				console.log("auto account update:",key[auto.data.id]);
+				//console.log("auto account update:",key[auto.data.id]);
 				
 				var a = require("./"+autofilename);
 				for (var event in auto.data.listener){
@@ -938,7 +938,7 @@ function getthisHash(filename){
 	if (filename == undefined){
 		filename = process.argv[1];
 	}
-	console.log("getthisHash filename:\t",filename)
+	//console.log("getthisHash filename:\t",filename)
 	var data = fs.readFileSync(filename);
 	var datahash = GetHash(data.toString(),-1)
 	
