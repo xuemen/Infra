@@ -13,7 +13,7 @@ var rl = readline.createInterface({
     output: process.stdout,
     // tab 自动完成
     completer: function(line) {
-        var completions = 'help createnormal createauto createcod transfer sync issue'.split(' ')
+        var completions = 'help createnormal createauto createcod transfer sync issue listaccount'.split(' ')
         var hits = completions.filter(function(c) { return c.indexOf(line) == 0 })
         return [hits.length ? hits : completions, line]
     },
@@ -44,7 +44,9 @@ rl.on('line', function (cmd) {
         case 'issue':
             infra.Issue();
             break;
-        default:
+        case 'listaccount':
+			console.log("账户详细信息：\n",infra.key);
+		default:
             console.log(cmd.trim());
     }
     rl.prompt(true);
@@ -79,6 +81,7 @@ function help() {
 	console.log("createauto:\t创建自动账号");
 	console.log("createcod:\t创建COD");
 	console.log("transfer:\t转账");
+	console.log("listaccount:\t查看所有账户");
 	console.log("sync:\t\t同步数据");
 	console.log("issue:\t\t发行");
 	console.log("ctrl-c:\t\t退出");
