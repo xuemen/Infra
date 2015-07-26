@@ -380,7 +380,7 @@ function CODtransfer(payerid,payeeid,amount,callback){
 	item.sigtype = 0;
 	item.data = data;
 	
-	sent(item,'POST',callback);
+	sentlocal(item,callback);
 }
 
 function transfer(payerid,payeeid,amount,passphrase,callback){
@@ -390,9 +390,9 @@ function transfer(payerid,payeeid,amount,passphrase,callback){
 		return;
 	}
 	
-	console.log("transfer key:",key);
-	console.log("transfer payerid:",payerid);
-	console.log("transfer key[payerid]:",key[payerid]);
+	//console.log("transfer key:",key);
+	//console.log("transfer payerid:",payerid);
+	//console.log("transfer key[payerid]:",key[payerid]);
 	var payersecfile = key[payerid].keyprefix + ".sec";
 	//var payerpubfile = payerid + ".pub";
 	var payerseckey = openpgp.key.readArmored(fs.readFileSync(payersecfile,'utf8')).keys[0];
@@ -446,7 +446,7 @@ function transfer(payerid,payeeid,amount,passphrase,callback){
 }
 
 // distribute storage
-var localPostIdx,localPutIdx;
+var localPostIdx,localPutIdx,localIdx;
 var globalPostIdx ,globalPutIdx;
 var postfileArray = new Array() ;
 var putfileArray = new Array() ;
@@ -480,6 +480,46 @@ function sent(item,method,callback){
 	
 	req.write(itemyaml);
 	req.end();
+}
+
+function sentlocal(item,callback){
+	var key;
+	if (item.hasOwnProperty("cod")) {
+		key = item.cod + "." + item.tag + "." + item.author;
+	} else {
+		key = item.tag + "." + item.author;
+	}
+	if (!localIdx.hasOwnProperty(key)) {
+		localIdx[key] = 0;
+		localIdx.update = new Date().toLocaleString();
+		fs.writeFile("local/index.yaml",yaml.safeDump(localIdx),function(err){
+			console.log("local notify: create a new key ["+key+"].\n");
+		});
+	}
+	
+	var filename;
+	if (item.hasOwnProperty("cod")) {
+		filename = "local/" + item.cod + "." + item.tag + "." + item.author + "." + (localIdx[key]+1) + ".yaml";
+	} else {
+		filename = "local/" + item.tag + "." + item.author + "." + (localIdx[key]+1) + ".yaml";
+	}
+	fs.exists(filename, function (exists) {
+		if (exists) {
+			console.log("local fail: file "+filename+" exist.");
+		} else {
+			item.createat = new Date().getTime();
+			fs.writeFile(filename,yaml.safeDump(item),function(err){
+				if(err) throw err;
+				console.log("local: "+filename+" saved.");
+				
+				localIdx[key] = localIdx[key] + 1;
+				localIdx.update = new Date().toLocaleString();
+				fs.writeFileSync("local/index.yaml",yaml.safeDump(localIdx));
+				
+				localsync(item);
+			});
+		}
+	})
 }
 
 function putsync(finish) {
@@ -565,6 +605,50 @@ function postsync(finish) {
 	});
 }
 
+
+function localsync(item) {
+	var key = exports.key;
+	
+	if (item.tag == "transfer"){
+		var data ;
+		if(item.log != undefined){
+			var log = yaml.safeLoad(item.log);
+			data = yaml.safeLoad(log.data);
+		}else if (item.sigtype == 0){
+			data = item.data;
+		}else if (item.sigtype == 2){
+			data = item.data;
+			var msg = openpgp.cleartext.readArmored(data);
+			var author = item.author ;
+			var nor = yaml.safeLoad(fs.readFileSync(key[author].norfilename,'utf8'));
+			var pubkeys = openpgp.key.readArmored(nor.data.pubkey).keys;
+			var pubkey = pubkeys[0];
+			var result = msg.verify(pubkeys);
+			data = yaml.safeLoad(msg.text);
+		}
+		if(data.hasOwnProperty("input")) {
+			var input = data.input;
+			var id = input.id;
+			var amount = input.amount;
+			//console.log("input:\t",key,"[",id,"]",key[id])
+			existORcreateObj(key,id);
+			existORcreate(key[id],"balance");
+			key[id].balance = key[id].balance - amount;
+		}
+		
+		if(data.hasOwnProperty("output")) {
+			var output = data.output;
+			var id = output.id;
+			var amount = output.amount;
+			//console.log("output:\t",key,"[",id,"]",key[id])
+			existORcreateObj(key,id);
+			existORcreate(key[id],"balance");
+			key[id].balance = key[id].balance + amount;
+		}
+	}
+	//console.log("postfile finish, key:",key);
+	exports.key = key;
+}
 //emitter.on("postupdate",updatebalance)
 emitter.on("postsync",postsync);
 
@@ -840,6 +924,17 @@ function localindexinit(){
 			fs.writeFileSync("put/index.yaml",yaml.safeDump(localPutIdx));
 		}
 	});
+	
+	mkdirsSync("local",0777);
+	fs.exists("local/index.yaml", function (exists) {
+		if (exists) {
+			localIdx = yaml.safeLoad(fs.readFileSync('local/index.yaml', 'utf8'));
+		}else {
+			localIdx = new Object();
+			localIdx.update = new Date().toLocaleString();
+			fs.writeFileSync("local/index.yaml",yaml.safeDump(localIdx));
+		}
+	});	
 }
 
 //创建多层文件夹 同步
