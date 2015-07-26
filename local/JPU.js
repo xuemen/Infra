@@ -46,6 +46,7 @@ rl.on('line', function (cmd) {
             break;
         case 'listaccount':
 			console.log("账户详细信息：\n",infra.key);
+			console.log("事件表：\n",infra.emitter);
 		default:
             console.log(cmd.trim());
     }

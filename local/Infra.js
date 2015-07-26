@@ -230,11 +230,16 @@ function createAuto(url,listener,author,name,callback){
 			item.data = data;
 			item.sigtype = 0;
 
-			sent(item,'POST',function (retstr){
-				if (typeof(callback) != "undefined") {
-					callback(retstr);
-				}
-			});
+			if(exports.key.hasOwnProperty(data.id)){
+				console.log("已经申请过了。");
+			}else {
+				sent(item,'POST',function (retstr){
+					if (typeof(callback) != "undefined") {
+						callback(retstr);
+					}
+				});	
+			}
+			
 		});
 		
 	});
@@ -631,8 +636,10 @@ function postsync(finish) {
 				} else {
 					// sort the object and emit event one by one
 					var sortupdatefile = sortObject(updatefile);
+					//console.log("postsync sortupdatefile:",sortupdatefile);
 					for (var time in sortupdatefile) {
 						var item = sortupdatefile[time];
+						postfile(item);
 						emitter.emit("postfile",item);
 					}
 					localPostIdx.update = new Date().toLocaleString();
@@ -648,7 +655,7 @@ function postsync(finish) {
 
 function localsync(item) {
 	var key = exports.key;
-	
+
 	if (item.tag == "transfer"){
 		var data ;
 		if(item.log != undefined){
@@ -693,8 +700,11 @@ function localsync(item) {
 emitter.on("postsync",postsync);
 
 // distribute event driver
-emitter.on("postfile",function(item){
+//emitter.on("postfile",postfile)
+function postfile(item){
 	//console.log("event postfile, item: ",item);
+	//console.log("event postfile, emitter: ",emitter);
+	console.log("event postfile, file: ",item.path+item.filename);
 	fs.writeFileSync(item.path+item.filename,item.content);
 	
 	var key = exports.key;
@@ -721,6 +731,13 @@ emitter.on("postfile",function(item){
 			});
 			res.on('end', function(){
 				fs.writeFileSync(autofilename,chunk);
+
+				existORcreateObj(key,auto.data.id);
+				console.log("auto account downloaded:",key[auto.data.id]);
+				key[auto.data.id].owner = auto.cod;
+				key[auto.data.id].norfilename = item.filename;
+				existORcreate(key[auto.data.id],"balance");
+				console.log("auto account update:",key[auto.data.id]);
 				
 				var a = require("./"+autofilename);
 				for (var event in auto.data.listener){
@@ -802,7 +819,7 @@ emitter.on("postfile",function(item){
 	}
 	//console.log("postfile finish, key:",key);
 	exports.key = key;
-})
+}
 
 
 // data management
