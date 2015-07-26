@@ -507,7 +507,7 @@ function postsync(finish) {
 				//console.log(globalPostIdx[key]);
 				if (localPostIdx[key] < globalPostIdx[key]){
 					for (var id = localPostIdx[key]+1;id <= globalPostIdx[key];id++) {
-						console.log("\npostsync file:\t",key+"."+id.toString()+".yaml");
+						//console.log("\npostsync file:\t",key+"."+id.toString()+".yaml");
 						postfileArray.push(key+"."+id.toString()+".yaml") ;
 					}
 					localPostIdx[key] = globalPostIdx[key];
@@ -570,6 +570,16 @@ emitter.on("postfile",function(item){
 	//console.log("event postfile, item: ",item);
 	fs.writeFileSync(item.path+item.filename,item.content);
 	
+	var key = exports.key;
+	if(item.filename.substr(0,4) == "nor."){
+		var nor = yaml.safeLoad(fs.readFileSync("post/"+item.filename,'utf8'));
+		var pubkey = openpgp.key.readArmored(nor.data.pubkey).keys[0];
+		existORcreateObj(key,pubkey.primaryKey.fingerprint);
+		key[pubkey.primaryKey.fingerprint].owner = pubkey.users[0].userId.userid;
+		key[pubkey.primaryKey.fingerprint].norfilename = "post/"+item.filename;
+		existORcreate(key[pubkey.primaryKey.fingerprint],"balance");
+	}
+	
 	if((item.filename.substr(item.filename.indexOf(".")+1,5) == "auto.") || (item.filename.substr(0,5) == "auto.")){
 		var auto = yaml.safeLoad(item.content);
 		var autofilename = item.filename.substr(0,item.filename.lastIndexOf(".")) + ".js" ;
@@ -621,7 +631,6 @@ emitter.on("postfile",function(item){
 		});
 	}
 	
-	var key = exports.key;
 	if (item.filename.substr(0,9) == "transfer."){
 		var obj = yaml.safeLoad(item.content);
 		//console.log("\npostupdate event item:\n",item);
@@ -635,6 +644,9 @@ emitter.on("postfile",function(item){
 			data = obj.data;
 			var msg = openpgp.cleartext.readArmored(data);
 			var author = obj.author ;
+			//console("\n\ndebug:",key,author,"\n\n");
+			//console.log("\n\ndebug:",key[author],"\n\n");
+			//console.log("\n\ndebug:",key[author].norfilename,"\n\n");
 			var nor = yaml.safeLoad(fs.readFileSync(key[author].norfilename,'utf8'));
 			var pubkeys = openpgp.key.readArmored(nor.data.pubkey).keys;
 			var pubkey = pubkeys[0];
@@ -645,6 +657,8 @@ emitter.on("postfile",function(item){
 			var input = data.input;
 			var id = input.id;
 			var amount = input.amount;
+			//console.log("input:\t",key,"[",id,"]",key[id])
+			existORcreateObj(key,id);
 			existORcreate(key[id],"balance");
 			key[id].balance = key[id].balance - amount;
 		}
@@ -653,6 +667,8 @@ emitter.on("postfile",function(item){
 			var output = data.output;
 			var id = output.id;
 			var amount = output.amount;
+			//console.log("output:\t",key,"[",id,"]",key[id])
+			existORcreateObj(key,id);
 			existORcreate(key[id],"balance");
 			key[id].balance = key[id].balance + amount;
 		}
