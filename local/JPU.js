@@ -178,10 +178,17 @@ function askandtransfer(){
 			console.log("账号：\t"+id+"\n户主：\t"+key[id].owner+"\n余额：\t"+key[id].balance+"\n");
 		}
 	}
+	console.log("其它账户:")
+	for (var id in key) {
+		if (!key[id].hasOwnProperty("keyprefix")) {
+			console.log("账号：\t"+id);
+		}
+	}
+	
 	// choice one as payer
 	var payer,payee,amount,passphrase;
 
-	rl.question("\n请输入付款人账号(可以输入前几个字母)：\n", function(answer) {
+	rl.question("\n请输入付款人账号(可以输入前几个字母，但要避开“其它账户”)：\n", function(answer) {
 		for (var id in key) {
 			if (id.indexOf(answer) == 0){
 				payer = id;

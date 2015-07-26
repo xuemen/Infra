@@ -33,10 +33,11 @@ var server = http.createServer(function (req, res) {
 			}
 			
 			var filename;
+			PostIdx[key] = PostIdx[key] + 1;
 			if (body.hasOwnProperty("cod")) {
-				filename = "post/" + body.cod + "." + body.tag + "." + body.author + "." + (PostIdx[key]+1) + ".yaml";
+				filename = "post/" + body.cod + "." + body.tag + "." + body.author + "." + (PostIdx[key]) + ".yaml";
 			} else {
-				filename = "post/" + body.tag + "." + body.author + "." + (PostIdx[key]+1) + ".yaml";
+				filename = "post/" + body.tag + "." + body.author + "." + (PostIdx[key]) + ".yaml";
 			}
 			fs.exists(filename, function (exists) {
 				if (exists) {
@@ -53,7 +54,7 @@ var server = http.createServer(function (req, res) {
 						res.end();
 						console.log("post: "+filename+" saved.");
 						
-						PostIdx[key] = PostIdx[key] + 1;
+						//PostIdx[key] = PostIdx[key] + 1;
 						PostIdx.update = new Date().toLocaleString();
 						fs.writeFileSync("post/index.yaml",yaml.safeDump(PostIdx));
 					});

@@ -282,6 +282,45 @@ function updatebalance(callback) {
 		}
 	});
 	
+	files = fs.readdirSync("local/");
+	files.forEach(function(item) {
+		if (item.substr(0,9) == "transfer."){
+			var obj = yaml.safeLoad(fs.readFileSync("local/"+item, 'utf8'));
+			//console.log("\npostupdate event item:\n",item);
+			var data ;
+			if(obj.log != undefined){
+				var log = yaml.safeLoad(obj.log);
+				data = yaml.safeLoad(log.data);
+			}else if (obj.sigtype == 0){
+				data = obj.data;
+			}else if (obj.sigtype == 2){
+				data = obj.data;
+				var msg = openpgp.cleartext.readArmored(data);
+				var author = obj.author ;
+				var nor = yaml.safeLoad(fs.readFileSync(key[author].norfilename,'utf8'));
+				var pubkeys = openpgp.key.readArmored(nor.data.pubkey).keys;
+				var pubkey = pubkeys[0];
+				var result = msg.verify(pubkeys);
+				data = yaml.safeLoad(msg.text);
+			}
+			if(data.hasOwnProperty("input")) {
+				var input = data.input;
+				var id = input.id;
+				var amount = input.amount;
+				existORcreate(key[id],"balance");
+				key[id].balance = key[id].balance - amount;
+			}
+			
+			if(data.hasOwnProperty("output")) {
+				var output = data.output;
+				var id = output.id;
+				var amount = output.amount;
+				existORcreate(key[id],"balance");
+				key[id].balance = key[id].balance + amount;
+			}
+		}
+	});
+	
 	if (typeof(callback) != "undefined") {
 		callback(key);
 	}
@@ -498,10 +537,11 @@ function sentlocal(item,callback){
 	}
 	
 	var filename;
+	localIdx[key] = localIdx[key] + 1;
 	if (item.hasOwnProperty("cod")) {
-		filename = "local/" + item.cod + "." + item.tag + "." + item.author + "." + (localIdx[key]+1) + ".yaml";
+		filename = "local/" + item.cod + "." + item.tag + "." + item.author + "." + (localIdx[key]) + ".yaml";
 	} else {
-		filename = "local/" + item.tag + "." + item.author + "." + (localIdx[key]+1) + ".yaml";
+		filename = "local/" + item.tag + "." + item.author + "." + (localIdx[key]) + ".yaml";
 	}
 	fs.exists(filename, function (exists) {
 		if (exists) {
@@ -510,9 +550,9 @@ function sentlocal(item,callback){
 			item.createat = new Date().getTime();
 			fs.writeFile(filename,yaml.safeDump(item),function(err){
 				if(err) throw err;
-				console.log("local: "+filename+" saved.");
+				console.log("local: "+filename+" saved.",new Date().toLocaleString());
 				
-				localIdx[key] = localIdx[key] + 1;
+				//localIdx[key] = localIdx[key] + 1;
 				localIdx.update = new Date().toLocaleString();
 				fs.writeFileSync("local/index.yaml",yaml.safeDump(localIdx));
 				
