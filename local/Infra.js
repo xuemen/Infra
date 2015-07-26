@@ -252,7 +252,7 @@ function updatebalance(callback) {
 	files.forEach(function(item) {
 		if (item.substr(0,9) == "transfer."){
 			var obj = yaml.safeLoad(fs.readFileSync("post/"+item, 'utf8'));
-			//console.log("\npostupdate event item:\n",item);
+
 			var data ;
 			if(obj.log != undefined){
 				var log = yaml.safeLoad(obj.log);
@@ -291,7 +291,7 @@ function updatebalance(callback) {
 	files.forEach(function(item) {
 		if (item.substr(0,9) == "transfer."){
 			var obj = yaml.safeLoad(fs.readFileSync("local/"+item, 'utf8'));
-			//console.log("\npostupdate event item:\n",item);
+
 			var data ;
 			if(obj.log != undefined){
 				var log = yaml.safeLoad(obj.log);
@@ -635,13 +635,18 @@ function postsync(finish) {
 					console.log('post:A file failed to save');
 				} else {
 					// sort the object and emit event one by one
+					
+					var sortupdatefile = sortObject2ArrayReverse(updatefile);
+					emitter.emit("postupdate",sortupdatefile);
+					
+					/*
 					var sortupdatefile = sortObject(updatefile);
 					//console.log("postsync sortupdatefile:",sortupdatefile);
 					for (var time in sortupdatefile) {
 						var item = sortupdatefile[time];
 						postfile(item);
 						emitter.emit("postfile",item);
-					}
+					}*/
 					localPostIdx.update = new Date().toLocaleString();
 					fs.writeFileSync("post/index.yaml",yaml.safeDump(localPostIdx));
 				}
@@ -700,10 +705,14 @@ function localsync(item) {
 emitter.on("postsync",postsync);
 
 // distribute event driver
-//emitter.on("postfile",postfile)
-function postfile(item){
+emitter.on("postupdate",postupdate);
+function postupdate(ReverseArray){
 	//console.log("event postfile, item: ",item);
 	//console.log("event postfile, emitter: ",emitter);
+	if(ReverseArray.length == 0){
+		return;
+	}
+	var item = ReverseArray.pop();
 	console.log("event postfile, file: ",item.path+item.filename);
 	fs.writeFileSync(item.path+item.filename,item.content);
 	
@@ -715,6 +724,10 @@ function postfile(item){
 		key[pubkey.primaryKey.fingerprint].owner = pubkey.users[0].userId.userid;
 		key[pubkey.primaryKey.fingerprint].norfilename = "post/"+item.filename;
 		existORcreate(key[pubkey.primaryKey.fingerprint],"balance");
+		emitter.emit("postfile",item);
+		emitter.emit("postupdate",ReverseArray);
+		//console.log("postfile finish, key:",key);
+		exports.key = key;
 	}
 	
 	if((item.filename.substr(item.filename.indexOf(".")+1,5) == "auto.") || (item.filename.substr(0,5) == "auto.")){
@@ -746,6 +759,10 @@ function postfile(item){
 					emitter.on(event,eval("a."+lf));
 					//console.log(emitter);
 				}
+				emitter.emit("postfile",item);
+				emitter.emit("postupdate",ReverseArray);
+				//console.log("postfile finish, key:",key);
+				exports.key = key;
 			});
 		});
 	}
@@ -771,13 +788,17 @@ function postfile(item){
 					emitter.on(event,eval("a."+lf));
 					console.log(emitter);
 				}
+				emitter.emit("postfile",item);
+				emitter.emit("postupdate",ReverseArray);
+				//console.log("postfile finish, key:",key);
+				//exports.key = key;
 			});
 		});
 	}
 	
 	if (item.filename.substr(0,9) == "transfer."){
 		var obj = yaml.safeLoad(item.content);
-		//console.log("\npostupdate event item:\n",item);
+
 		var data ;
 		if(obj.log != undefined){
 			var log = yaml.safeLoad(obj.log);
@@ -816,9 +837,12 @@ function postfile(item){
 			existORcreate(key[id],"balance");
 			key[id].balance = key[id].balance + amount;
 		}
+		emitter.emit("postfile",item);
+		emitter.emit("postupdate",ReverseArray);
+		//console.log("postfile finish, key:",key);
+		exports.key = key;
 	}
-	//console.log("postfile finish, key:",key);
-	exports.key = key;
+	
 }
 
 
@@ -855,6 +879,42 @@ function sortObject(o) {
 
     for (key = 0; key < a.length; key++) {
         sorted[a[key]] = o[a[key]];
+    }
+    return sorted;
+}
+
+function sortObject2Array(o) {
+    var sorted = [],
+    key, a = [];
+
+    for (key in o) {
+        if (o.hasOwnProperty(key)) {
+            a.push(key);
+        }
+    }
+
+    a.sort();
+
+    for (key = 0; key < a.length; key++) {
+        sorted.push(o[a[key]]);
+    }
+    return sorted;
+}
+
+function sortObject2ArrayReverse(o) {
+    var sorted = [],
+    key, a = [];
+
+    for (key in o) {
+        if (o.hasOwnProperty(key)) {
+            a.push(key);
+        }
+    }
+
+    a.sort();
+
+    for (key = a.length-1 ; key >=0 ; key--) {
+        sorted.push(o[a[key]]);
     }
     return sorted;
 }
