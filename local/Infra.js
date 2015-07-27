@@ -269,21 +269,26 @@ function updatebalance(callback) {
 				var result = msg.verify(pubkeys);
 				data = yaml.safeLoad(msg.text);
 			}
-			if(data.hasOwnProperty("input")) {
-				var input = data.input;
-				var id = input.id;
-				var amount = input.amount;
-				existORcreate(key[id],"balance");
-				key[id].balance = key[id].balance - amount;
+			if (data == undefined){
+				console.log("invalid transfer:",item);
+			}else {
+				if(data.hasOwnProperty("input")) {
+					var input = data.input;
+					var id = input.id;
+					var amount = input.amount;
+					existORcreate(key[id],"balance");
+					key[id].balance = key[id].balance - amount;
+				}
+				
+				if(data.hasOwnProperty("output")) {
+					var output = data.output;
+					var id = output.id;
+					var amount = output.amount;
+					existORcreate(key[id],"balance");
+					key[id].balance = key[id].balance + amount;
+				}
 			}
 			
-			if(data.hasOwnProperty("output")) {
-				var output = data.output;
-				var id = output.id;
-				var amount = output.amount;
-				existORcreate(key[id],"balance");
-				key[id].balance = key[id].balance + amount;
-			}
 		}
 	});
 	

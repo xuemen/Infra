@@ -6,6 +6,18 @@ var yaml = require('js-yaml');
 
 var config = yaml.safeLoad(fs.readFileSync('config.yaml', 'utf8'));
 
+
+process.on('uncaughtException', function(err) {
+	var log = new Object();
+	log.err = err;
+	log.exports = infra ;
+	log.config = config ;
+	var filename = "error"+new Date().getTime() +".log";
+	fs.writeFileSync(filename,yaml.safeDump(log));
+	console.log('\n\n============================================================\n出现错误！请把这个文件发给huangyg@xuemen.com\n============================================================\n\n',filename);
+	rl.prompt(true);
+});
+
 process.stdin.setEncoding('utf8');
 process.stdout.setEncoding('utf8');
 var rl = readline.createInterface({
@@ -75,6 +87,9 @@ rl.setPrompt('JPU> ');
 // 给我提示
 help();
 rl.prompt(true);
+
+
+
 
 function help() {
 	console.log("help:\t\t显示帮助");
