@@ -47,7 +47,8 @@ var server = http.createServer(function (req, res) {
 			}
 			if (!PostIdx.hasOwnProperty(key)) {
 				PostIdx[key] = 0;
-				PostIdx.update = new Date().toLocaleString();
+				PostIdx.update = new Date().getTime();
+				PostIdx.updateLocal = new Date().toLocaleString();
 				fs.writeFile("post/index.yaml",yaml.safeDump(PostIdx),function(err){
 					console.log("post notify: create a new key ["+key+"].\n");
 				});
@@ -76,7 +77,8 @@ var server = http.createServer(function (req, res) {
 						console.log("post: "+filename+" saved.");
 						
 						//PostIdx[key] = PostIdx[key] + 1;
-						PostIdx.update = new Date().toLocaleString();
+						PostIdx.update = new Date().getTime();
+						PostIdx.updateLocal = new Date().toLocaleString();
 						fs.writeFileSync("post/index.yaml",yaml.safeDump(PostIdx));
 					});
 				}
@@ -117,6 +119,8 @@ var server = http.createServer(function (req, res) {
 
 				PutIdx[filename] = new Date().toLocaleString();
 				PutIdx.update = new Date().toLocaleString();
+				PutIdx.update = new Date().getTime();
+				PutIdx.updateLocal = new Date().toLocaleString();
 				fs.writeFileSync("put/index.yaml",yaml.safeDump(PutIdx));
 			});
 		} 

@@ -4,7 +4,15 @@
 ###需求概况
 Infra为共同体部署者提供统一的软件模块，由所有共同体的成员共享，包括以下需求：
 ####协作网络 
-1. 查询共同体的角色清单，这些共同体是部署者注册成功的；
+1. 创建共同体
+	1. createCOD(url,listener,author,name,callback)
+		* url: 部署代码的存放地址
+		* lisetener：cod的事件处理函数列表。一个对象，key是事件名称，value是处理函数名。函数必须是统一形式，根据事件不同。
+		* author：作者（部署者）的ID。
+		* name：COD的名称
+		* callback：创建结束后的回调函数。参数是COD文件前缀。
+
+2. 查询共同体的角色清单，这些共同体是部署者注册成功的；
 	1. getCODlist()
 		* 无参数
 		* 返回一个字符串数组，内容是COD名称
@@ -28,10 +36,47 @@ Infra为共同体部署者提供统一的软件模块，由所有共同体的成
 
 ####联合提货权 JT：Joint Token
 1. 创建账号；
-	1. 普通账号：主要由成员使用；
-	2. 自动帐号：根据事件触发对外转账；
+	1. createNor(name,id,email,passphrase,callback)（普通账号：主要由成员使用，2048位openpgp密钥对）
+		* name：户名
+		* id：账号ID
+		* email：联系email
+		* passphrase：私钥口令
+		* callback：回调函数
+	2. createAuto(url,listener,author,name,callback)（自动帐号：根据事件触发对外转账）
+		* url：自动账户代码地址
+		* listener：事件处理函数对象，key=事件名称，value=处理函数名称。
+		* author：作者（部署者）签名。
+		* name：户名
+		* callback：回调函数
+
 	3. 根账号：创建一种新的提货权，根据事件触发发行、销毁；
-2. 普通账号转账；
+2. 建立账号列表
+	1. readKey()返回key对象
+		* key[fingerprint | id] = obj
+        * owner: userid | cod
+        * keyprefix ：可选
+        * norfilename
+        * balance
+3. 导入密钥对，从本路径下的sec、pub文件导入nor账号并提交。
+	1. importNor()
+4. 更新余额，包括各种账号类别。
+	1. updatebalance(callback)
+		* callback：回调函数
+5. 发行，仅供测试使用。
+	1. Issue()
+6. 普通账号转账；
+	1. transfer(payerid,payeeid,amount,passphrase,callback){
+		* payerid：付款人
+		* payeeid：收款人
+		* amount：金额
+		* passphrase：付款人私钥口令
+		* callback：回调函数
+7. 自动账户转账，记录在local文件夹
+	1. CODtransfer(payerid,payeeid,amount,callback)
+		* payerid：付款COD ID
+		* payeeid：收款人
+		* amount：金额
+		* callback：回调函数
 3. 发布预售计划；
 4. 申请预购，同时确定提货|兑现；
 5. 申请贷款；

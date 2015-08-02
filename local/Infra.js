@@ -33,8 +33,9 @@ exports.sent = sent ;
 
 
 exports.eventinit = eventinit ;
-
 exports.getthisHash = getthisHash ;
+
+var deploytime = Date.UTC(2015,1,1,0,0,0,0);
 
 init();
 
@@ -78,6 +79,8 @@ function createCOD(url,listener,author,name,callback){
 		
 	});
 }
+
+
 // Joint Token
 function readKey() {
 	var key = new Object();
@@ -563,7 +566,9 @@ function sentlocal(item,callback){
 				console.log("local:",filename);
 				
 				//localIdx[key] = localIdx[key] + 1;
-				localIdx.update = new Date().toLocaleString();
+				localIdx.update = new Date().getTime();
+				localIdx.updateLocal = new Date().toLocaleString();
+				
 				fs.writeFileSync("local/index.yaml",yaml.safeDump(localIdx));
 				
 				localsync(item);
@@ -592,7 +597,23 @@ function postsync(finish) {
 			globalPostIdx = yaml.safeLoad(postindex);
 			for (var key in globalPostIdx) {
 				//console.log("key:\t"+key);
-				if (key == "update") continue;
+				if (key === "updateLocal") continue;
+				if (key === "update") {
+					var globaltime = globalPostIdx[key];
+					console.log("globaltime",globaltime);
+					var localtime = localPostIdx[key];
+					console.log("localtime",localtime);
+					var nextdate = new Date(localtime+86400000);
+					console.log("nextdate",nextdate);
+					var nextday = nextdate.getTime()-(nextdate.getUTCHours()*60*60+nextdate.getUTCMinutes()*60+nextdate.getUTCSeconds())*1000-nextdate.getUTCMilliseconds();
+					console.log("nextday",nextday);
+					for(var t=nextday;t<=globaltime;t= t+86400000) {
+						console.log("t=",t,new Date(t).toUTCString());
+					}
+					continue;
+				}
+				
+				
 				if (!localPostIdx.hasOwnProperty(key)) {
 					localPostIdx[key] = 0;
 				}
@@ -652,7 +673,8 @@ function postsync(finish) {
 						postfile(item);
 						emitter.emit("postfile",item);
 					}*/
-					localPostIdx.update = new Date().toLocaleString();
+					localPostIdx.update = new Date("2015-01-01 1:00:00").getTime();
+					localPostIdx.updateLocal = new Date("2015-01-01 1:00:00").toLocaleString();
 					fs.writeFileSync("post/index.yaml",yaml.safeDump(localPostIdx));
 				}
 			});
@@ -1031,7 +1053,8 @@ function localindexinit(){
 			localPostIdx = yaml.safeLoad(fs.readFileSync('post/index.yaml', 'utf8'));
 		}else {
 			localPostIdx = new Object();
-			localPostIdx.update = new Date().toLocaleString();
+			localPostIdx.update = deploytime;
+			localPostIdx.updateLocal = new Date(deploytime).toLocaleString();
 			fs.writeFileSync("post/index.yaml",yaml.safeDump(localPostIdx));
 		}
 	});
@@ -1042,7 +1065,8 @@ function localindexinit(){
 			localPutIdx = yaml.safeLoad(fs.readFileSync('put/index.yaml', 'utf8'));
 		}else {
 			localPutIdx = new Object();
-			localPutIdx.update = new Date().toLocaleString();
+			localPutIdx.update = deploytime;
+			localPutIdx.updateLocal = new Date(deploytime).toLocaleString();
 			fs.writeFileSync("put/index.yaml",yaml.safeDump(localPutIdx));
 		}
 	});
@@ -1053,7 +1077,8 @@ function localindexinit(){
 			localIdx = yaml.safeLoad(fs.readFileSync('local/index.yaml', 'utf8'));
 		}else {
 			localIdx = new Object();
-			localIdx.update = new Date().toLocaleString();
+			localIdx.update = deploytime;
+			localIdx.updateLocal = new Date(deploytime).toLocaleString();
 			fs.writeFileSync("local/index.yaml",yaml.safeDump(localIdx));
 		}
 	});	
