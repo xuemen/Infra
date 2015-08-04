@@ -608,7 +608,8 @@ function postsync(finish) {
 					var nextday = nextdate.getTime()-(nextdate.getUTCHours()*60*60+nextdate.getUTCMinutes()*60+nextdate.getUTCSeconds())*1000-nextdate.getUTCMilliseconds();
 					console.log("nextday",nextday);
 					for(var t=nextday;t<=globaltime;t= t+86400000) {
-						console.log("t=",t,new Date(t).toUTCString());
+						//console.log("t=",t,new Date(t).toUTCString());
+						eventqueue[t]="newday";
 					}
 					continue;
 				}
@@ -644,12 +645,20 @@ function postsync(finish) {
 						//fs.writeFileSync(filename,chunk);
 						//console.log("post: "+filename+" saved.");
 						var itemdata = yaml.safeLoad(chunk);
+						var obj = new Object();
+						obj.path = "post/";
+						obj.filename = item;
+						obj.content = chunk;
+
+						existORcreateObj(eventqueue,itemdata.createat);
+						existORcreateArray(eventqueue[itemdata.createat],itemdata.tag);
+						eventqueue[itemdata.createat][itemdata.tag].push(obj);
 						
 						//existORcreateObj(updatefile,itemdata.createat);
-						updatefile[itemdata.createat] = new Object();
-						updatefile[itemdata.createat].path = "post/";
-						updatefile[itemdata.createat].filename = item;
-						updatefile[itemdata.createat].content = chunk;
+						//updatefile[itemdata.createat] = new Object();
+						//updatefile[itemdata.createat].path = "post/";
+						//updatefile[itemdata.createat].filename = item;
+						//updatefile[itemdata.createat].content = chunk;
 						
 						callback();
 					});
@@ -662,8 +671,8 @@ function postsync(finish) {
 				} else {
 					// sort the object and emit event one by one
 					
-					var sortupdatefile = sortObject2ArrayReverse(updatefile);
-					emitter.emit("postupdate",sortupdatefile);
+					//var sortupdatefile = sortObject2ArrayReverse(updatefile);
+					//emitter.emit("postupdate",sortupdatefile);
 					
 					/*
 					var sortupdatefile = sortObject(updatefile);
@@ -673,9 +682,12 @@ function postsync(finish) {
 						postfile(item);
 						emitter.emit("postfile",item);
 					}*/
-					localPostIdx.update = new Date("2015-01-01 1:00:00").getTime();
-					localPostIdx.updateLocal = new Date("2015-01-01 1:00:00").toLocaleString();
+					localPostIdx.update = new Date().getTime();
+					localPostIdx.updateLocal = new Date().toLocaleString();
 					fs.writeFileSync("post/index.yaml",yaml.safeDump(localPostIdx));
+					
+					//console.log("postsync> eventqueue:\n",eventqueue)
+					emitter.emit("eventloop");
 				}
 			});
 		});
@@ -732,6 +744,176 @@ function localsync(item) {
 emitter.on("postsync",postsync);
 
 // distribute event driver
+var eventqueue = new Object(); // or save in exports?
+var eventcallbackcnt = 0;
+
+emitter.on("eventloop",eventloop);
+function eventloop(){
+	var min = new Date().getTime();
+	var getmin = false;
+	//console.log("eventqueue> min init:",min);
+	
+	for(key in eventqueue){
+		if (min > key) {
+			min = key;
+			getmin = true;
+		}
+	}
+	if (getmin == false){
+		return;
+	}
+	
+	console.log("eventqueue> min final:",min,new Date(parseInt(min)).toUTCString());
+	//console.log("eventqueue> eventqueue[min]:",eventqueue[min]);
+	
+	var key = exports.key;
+	if (eventqueue[min].hasOwnProperty("nor")) {
+		var item = eventqueue[min].nor.pop();
+		fs.writeFileSync(item.path+item.filename,item.content);
+		if (eventqueue[min].nor.length == 0) {
+			delete eventqueue[min].nor;
+		}
+		var nor = yaml.safeLoad(item.content);
+		var pubkey = openpgp.key.readArmored(nor.data.pubkey).keys[0];
+		existORcreateObj(key,pubkey.primaryKey.fingerprint);
+		key[pubkey.primaryKey.fingerprint].owner = pubkey.users[0].userId.userid;
+		key[pubkey.primaryKey.fingerprint].norfilename = "post/"+item.filename;
+		existORcreate(key[pubkey.primaryKey.fingerprint],"balance");
+		
+		eventcallbackcnt = events.EventEmitter.listenerCount(emitter, "postfile");
+		if(eventcallbackcnt > 0){
+			emitter.emit("postfile",item,eventcallback);
+		}else{
+			emitter.emit("eventloop");
+		}
+		exports.key = key;
+	}else if (eventqueue[min].hasOwnProperty("auto")) {
+		var item = eventqueue[min].auto.pop();
+		fs.writeFileSync(item.path+item.filename,item.content);
+		if (eventqueue[min].auto.length == 0) {
+			delete eventqueue[min].auto;
+		}
+		
+		var auto = yaml.safeLoad(item.content);
+		var autofilename = item.filename.substr(0,item.filename.lastIndexOf(".")) + ".js" ;
+		
+		console.log("new auto account: download "+auto.data.codeurl+" and saved as "+autofilename);
+		var autoget = https.get(auto.data.codeurl,function(res) {
+			var chunk = ""; 
+			res.setEncoding('utf8');
+
+			res.on('data', function(data){
+			  chunk += data ;
+			});
+			res.on('end', function(){
+				fs.writeFileSync(autofilename,chunk);
+
+				existORcreateObj(key,auto.data.id);
+				//console.log("auto account downloaded:",key[auto.data.id]);
+				key[auto.data.id].owner = auto.cod;
+				key[auto.data.id].norfilename = item.filename;
+				existORcreate(key[auto.data.id],"balance");
+				//console.log("auto account update:",key[auto.data.id]);
+				
+				var a = require("./"+autofilename);
+				for (var event in auto.data.listener){
+					var lf = auto.data.listener[event] ;
+					//console.log("a."+lf);
+					emitter.on(event,eval("a."+lf));
+					//console.log(emitter);
+				}
+				
+				eventcallbackcnt = events.EventEmitter.listenerCount(emitter, "postfile");
+
+				if(eventcallbackcnt > 0){
+					emitter.emit("postfile",item,eventcallback);
+				}else{
+					emitter.emit("eventloop");
+				}
+				exports.key = key;
+			});
+		});
+	}else if (eventqueue[min].hasOwnProperty("transfer")) {
+		var item = eventqueue[min].transfer.pop();
+		fs.writeFileSync(item.path+item.filename,item.content);
+		if (eventqueue[min].transfer.length == 0) {
+			delete eventqueue[min].transfer;
+		}
+		
+		var obj = yaml.safeLoad(item.content);
+
+		var data ;
+		if(obj.log != undefined){
+			var log = yaml.safeLoad(obj.log);
+			data = yaml.safeLoad(log.data);
+		}else if (obj.sigtype == 0){
+			data = obj.data;
+		}else if (obj.sigtype == 2){
+			data = obj.data;
+			var msg = openpgp.cleartext.readArmored(data);
+			var author = obj.author ;
+			//console("\n\ndebug:",key,author,"\n\n");
+			//console.log("\n\ndebug:",key[author],"\n\n");
+			//console.log("\n\ndebug:",key[author].norfilename,"\n\n");
+			var nor = yaml.safeLoad(fs.readFileSync(key[author].norfilename,'utf8'));
+			var pubkeys = openpgp.key.readArmored(nor.data.pubkey).keys;
+			var pubkey = pubkeys[0];
+			var result = msg.verify(pubkeys);
+			data = yaml.safeLoad(msg.text);
+		}
+		if(data.hasOwnProperty("input")) {
+			var input = data.input;
+			var id = input.id;
+			var amount = input.amount;
+			//console.log("input:\t",key,"[",id,"]",key[id])
+			existORcreateObj(key,id);
+			existORcreate(key[id],"balance");
+			key[id].balance = key[id].balance - amount;
+		}
+		
+		if(data.hasOwnProperty("output")) {
+			var output = data.output;
+			var id = output.id;
+			var amount = output.amount;
+			//console.log("output:\t",key,"[",id,"]",key[id])
+			existORcreateObj(key,id);
+			existORcreate(key[id],"balance");
+			key[id].balance = key[id].balance + amount;
+		}
+		
+		eventcallbackcnt = events.EventEmitter.listenerCount(emitter, "postfile");
+		
+		if(eventcallbackcnt > 0){
+			emitter.emit("postfile",item,eventcallback);
+		}else{
+			emitter.emit("eventloop");
+		}
+		exports.key = key;
+	}else if(eventqueue[min] === "newday"){
+		//console.log("eventqueue> newday:",min);
+		eventcallbackcnt = events.EventEmitter.listenerCount(emitter, "newday");
+		//console.log("eventqueue> newday.eventcallbackcnt:",eventcallbackcnt);
+		if(eventcallbackcnt > 0){
+			emitter.emit("newday",min,eventcallback);
+		}else{
+			delete eventqueue[min];
+			emitter.emit("eventloop");
+		}
+	}else {
+		delete eventqueue[min];
+		emitter.emit("eventloop");
+	}
+	
+}
+
+function eventcallback(){
+	console.log("eventcallback> eventcallbackcnt:",eventcallbackcnt);
+	eventcallbackcnt--;
+	if(eventcallbackcnt === 0){
+		emitter.emit("eventloop");
+	}
+}
+
 emitter.on("postupdate",postupdate);
 function postupdate(ReverseArray){
 	//console.log("event postfile, item: ",item);
@@ -958,6 +1140,13 @@ function existORcreateObj(obj,id) {
 	//console.log(id);
 	if (!obj.hasOwnProperty(id)) {
 		obj[id] = new Object();
+	}
+}
+
+function existORcreateArray(obj,id) {
+	//console.log(id);
+	if (!obj.hasOwnProperty(id)) {
+		obj[id] = new Array();
 	}
 }
 
