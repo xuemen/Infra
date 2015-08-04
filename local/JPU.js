@@ -25,7 +25,7 @@ var rl = readline.createInterface({
     output: process.stdout,
     // tab 自动完成
     completer: function(line) {
-        var completions = 'help createnormal createauto createcod transfer sync issue listaccount'.split(' ')
+        var completions = 'help createnormal createauto createcod importnor transfer sync issue listaccount'.split(' ')
         var hits = completions.filter(function(c) { return c.indexOf(line) == 0 })
         return [hits.length ? hits : completions, line]
     },
@@ -47,7 +47,10 @@ rl.on('line', function (cmd) {
         case 'createcod':
             createCOD();
             break;
-        case 'transfer':
+        case 'importnor':
+			infra.importNor();
+            break;
+		case 'transfer':
             askandtransfer();
             break;
         case 'sync':
@@ -96,6 +99,7 @@ function help() {
 	console.log("createnormal:\t创建普通账号");
 	console.log("createauto:\t创建自动账号");
 	console.log("createcod:\t创建COD");
+	console.log("importnor:\t导入普通账号");
 	console.log("transfer:\t转账");
 	console.log("listaccount:\t查看所有账户");
 	console.log("sync:\t\t同步数据");
@@ -109,8 +113,10 @@ function createCOD(){
 	rl.question("请输入代码URL：\n", function(answer) {
 		url = answer;
 		listener = new Object();
-		listener["postfile"] = "postfile" ;
-		listener["postupdate"] = "postupdate" ;
+		listener["transfer"] = "transfer" ;
+		listener["nor"] = "nor" ;
+		listener["auto"] = "auto" ;
+		listener["deploy"] = "deploy" ;
 		
 		rl.question("COD名称：\n", function(answer) {
 			name = answer;

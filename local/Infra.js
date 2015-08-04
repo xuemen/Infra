@@ -104,13 +104,13 @@ function readKey() {
 			var pubkey = openpgp.key.readArmored(nor.data.pubkey).keys[0];
 			existORcreateObj(key,pubkey.primaryKey.fingerprint);
 			key[pubkey.primaryKey.fingerprint].owner = pubkey.users[0].userId.userid;
-			key[pubkey.primaryKey.fingerprint].norfilename = "post/"+item;
+			key[pubkey.primaryKey.fingerprint].yamlfilename = "post/"+item;
 			existORcreate(key[pubkey.primaryKey.fingerprint],"balance");
 		}else if((item.substr(item.indexOf(".")+1,5) == "auto.") || (item.substr(0,5) == "auto.")){
 			var auto = yaml.safeLoad(fs.readFileSync("post/"+item,'utf8'));
 			existORcreateObj(key,auto.data.id);
 			key[auto.data.id].owner = auto.cod;
-			key[auto.data.id].norfilename = "post/"+item;
+			key[auto.data.id].yamlfilename = "post/"+item;
 			existORcreate(key[auto.data.id],"balance");
 		}
 	});
@@ -124,7 +124,7 @@ function importNor(){
 	var key = exports.key;
 	
 	for (var id in key) {
-		if (!key[id].hasOwnProperty("norfilename")) {
+		if (!key[id].hasOwnProperty("yamlfilename")) {
 			console.log("import key:\n",key[id]);
 			var vid = id;
 			//var seckeyArmored = fs.readFileSync(key[id].keyprefix+".sec",'utf8');
@@ -151,7 +151,7 @@ function importNor(){
 				console.log("sent key callback:\n",key[id],key[vid]);
 				fs.renameSync(key[vid].keyprefix+".pub",retstr+".pub");
 				fs.renameSync(key[vid].keyprefix+".sec",retstr+".sec");
-				key[vid].norfilename = "post/"+retstr+".yaml";
+				key[vid].yamlfilename = "post/"+retstr+".yaml";
 				key[vid].keyprefix = retstr;
 
 				if (typeof(callback) != "undefined") {
@@ -266,7 +266,7 @@ function updatebalance(callback) {
 				data = obj.data;
 				var msg = openpgp.cleartext.readArmored(data);
 				var author = obj.author ;
-				var nor = yaml.safeLoad(fs.readFileSync(key[author].norfilename,'utf8'));
+				var nor = yaml.safeLoad(fs.readFileSync(key[author].yamlfilename,'utf8'));
 				var pubkeys = openpgp.key.readArmored(nor.data.pubkey).keys;
 				var pubkey = pubkeys[0];
 				var result = msg.verify(pubkeys);
@@ -310,7 +310,7 @@ function updatebalance(callback) {
 				data = obj.data;
 				var msg = openpgp.cleartext.readArmored(data);
 				var author = obj.author ;
-				var nor = yaml.safeLoad(fs.readFileSync(key[author].norfilename,'utf8'));
+				var nor = yaml.safeLoad(fs.readFileSync(key[author].yamlfilename,'utf8'));
 				var pubkeys = openpgp.key.readArmored(nor.data.pubkey).keys;
 				var pubkey = pubkeys[0];
 				var result = msg.verify(pubkeys);
@@ -450,7 +450,7 @@ function transfer(payerid,payeeid,amount,passphrase,callback){
 	var payerseckey = openpgp.key.readArmored(fs.readFileSync(payersecfile,'utf8')).keys[0];
 	//var payerpubkey = openpgp.key.readArmored(fs.readFileSync(payerpubfile,'utf8')).keys[0];
 	
-	var payeepubfile = key[payeeid].norfilename;
+	var payeepubfile = key[payeeid].yamlfilename;
 	//console.log("transfer payeeid:",payeeid)
 	//console.log("transfer pubfile:",pubfile)
 	//console.log("transfer payeepubfile:",payeepubfile)
@@ -633,7 +633,6 @@ function postsync(finish) {
 			
 			async.each(postfileArray, function (item, callback) {
 				var fileaddr = "http://"+config.server.url+":"+config.server.port+'/post/'+item;
-				//var filename = "post/"+item;
 				var req = http.get(fileaddr, function(res) {
 					var chunk = ""; 
 					res.setEncoding('utf8');
@@ -642,8 +641,8 @@ function postsync(finish) {
 					  chunk += data ;
 					});
 					res.on('end', function(){
-						//fs.writeFileSync(filename,chunk);
-						//console.log("post: "+filename+" saved.");
+						//console.log("post: "+item+" downloaded.\n",chunk);
+
 						var itemdata = yaml.safeLoad(chunk);
 						var obj = new Object();
 						obj.path = "post/";
@@ -667,7 +666,7 @@ function postsync(finish) {
 					localPostIdx.updateLocal = new Date().toLocaleString();
 					fs.writeFileSync("post/index.yaml",yaml.safeDump(localPostIdx));
 					
-					//console.log("postsync> eventqueue:\n",eventqueue)
+					console.log("postsync> eventqueue:\n",eventqueue)
 					emitter.emit("eventloop");
 				}
 			});
@@ -691,7 +690,7 @@ function localsync(item) {
 			data = item.data;
 			var msg = openpgp.cleartext.readArmored(data);
 			var author = item.author ;
-			var nor = yaml.safeLoad(fs.readFileSync(key[author].norfilename,'utf8'));
+			var nor = yaml.safeLoad(fs.readFileSync(key[author].yamlfilename,'utf8'));
 			var pubkeys = openpgp.key.readArmored(nor.data.pubkey).keys;
 			var pubkey = pubkeys[0];
 			var result = msg.verify(pubkeys);
@@ -757,12 +756,12 @@ function eventloop(){
 		var pubkey = openpgp.key.readArmored(nor.data.pubkey).keys[0];
 		existORcreateObj(key,pubkey.primaryKey.fingerprint);
 		key[pubkey.primaryKey.fingerprint].owner = pubkey.users[0].userId.userid;
-		key[pubkey.primaryKey.fingerprint].norfilename = "post/"+item.filename;
+		key[pubkey.primaryKey.fingerprint].yamlfilename = "post/"+item.filename;
 		existORcreate(key[pubkey.primaryKey.fingerprint],"balance");
 		
-		eventcallbackcnt = events.EventEmitter.listenerCount(emitter, "postfile");
+		eventcallbackcnt = events.EventEmitter.listenerCount(emitter, "nor");
 		if(eventcallbackcnt > 0){
-			emitter.emit("postfile",item,eventcallback);
+			emitter.emit("nor",item,eventcallback);
 		}else{
 			emitter.emit("eventloop");
 		}
@@ -796,10 +795,10 @@ function eventloop(){
 					console.log(emitter);
 				}
 				
-				eventcallbackcnt = events.EventEmitter.listenerCount(emitter, "postfile");
+				eventcallbackcnt = events.EventEmitter.listenerCount(emitter, "deploy");
 
 				if(eventcallbackcnt > 0){
-					emitter.emit("postfile",item,eventcallback);
+					emitter.emit("deploy",item,eventcallback);
 				}else{
 					emitter.emit("eventloop");
 				}
@@ -807,6 +806,7 @@ function eventloop(){
 		});
 	}else if (eventqueue[min].hasOwnProperty("auto")) {
 		var item = eventqueue[min].auto.pop();
+		//console.log("eventqueue> auto.item:\n",item);
 		fs.writeFileSync(item.path+item.filename,item.content);
 		if (eventqueue[min].auto.length == 0) {
 			delete eventqueue[min].auto;
@@ -829,7 +829,7 @@ function eventloop(){
 				existORcreateObj(key,auto.data.id);
 				//console.log("auto account downloaded:",key[auto.data.id]);
 				key[auto.data.id].owner = auto.cod;
-				key[auto.data.id].norfilename = item.filename;
+				key[auto.data.id].yamlfilename = item.filename;
 				existORcreate(key[auto.data.id],"balance");
 				//console.log("auto account update:",key[auto.data.id]);
 				
@@ -838,13 +838,13 @@ function eventloop(){
 					var lf = auto.data.listener[event] ;
 					//console.log("a."+lf);
 					emitter.on(event,eval("a."+lf));
-					//console.log(emitter);
 				}
+				//console.log(emitter);
 				
-				eventcallbackcnt = events.EventEmitter.listenerCount(emitter, "postfile");
+				eventcallbackcnt = events.EventEmitter.listenerCount(emitter, "auto");
 
 				if(eventcallbackcnt > 0){
-					emitter.emit("postfile",item,eventcallback);
+					emitter.emit("auto",item,eventcallback);
 				}else{
 					emitter.emit("eventloop");
 				}
@@ -872,8 +872,8 @@ function eventloop(){
 			var author = obj.author ;
 			//console("\n\ndebug:",key,author,"\n\n");
 			//console.log("\n\ndebug:",key[author],"\n\n");
-			//console.log("\n\ndebug:",key[author].norfilename,"\n\n");
-			var nor = yaml.safeLoad(fs.readFileSync(key[author].norfilename,'utf8'));
+			//console.log("\n\ndebug:",key[author].yamlfilename,"\n\n");
+			var nor = yaml.safeLoad(fs.readFileSync(key[author].yamlfilename,'utf8'));
 			var pubkeys = openpgp.key.readArmored(nor.data.pubkey).keys;
 			var pubkey = pubkeys[0];
 			var result = msg.verify(pubkeys);
@@ -899,10 +899,10 @@ function eventloop(){
 			key[id].balance = key[id].balance + amount;
 		}
 		
-		eventcallbackcnt = events.EventEmitter.listenerCount(emitter, "postfile");
+		eventcallbackcnt = events.EventEmitter.listenerCount(emitter, "transfer");
 		
 		if(eventcallbackcnt > 0){
-			emitter.emit("postfile",item,eventcallback);
+			emitter.emit("transfer",item,eventcallback);
 		}else{
 			emitter.emit("eventloop");
 		}
