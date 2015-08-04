@@ -653,13 +653,7 @@ function postsync(finish) {
 						existORcreateObj(eventqueue,itemdata.createat);
 						existORcreateArray(eventqueue[itemdata.createat],itemdata.tag);
 						eventqueue[itemdata.createat][itemdata.tag].push(obj);
-						
-						//existORcreateObj(updatefile,itemdata.createat);
-						//updatefile[itemdata.createat] = new Object();
-						//updatefile[itemdata.createat].path = "post/";
-						//updatefile[itemdata.createat].filename = item;
-						//updatefile[itemdata.createat].content = chunk;
-						
+
 						callback();
 					});
 				}).on('error', function(e) {
@@ -669,19 +663,6 @@ function postsync(finish) {
 				if( err ) {
 					console.log('post:A file failed to save');
 				} else {
-					// sort the object and emit event one by one
-					
-					//var sortupdatefile = sortObject2ArrayReverse(updatefile);
-					//emitter.emit("postupdate",sortupdatefile);
-					
-					/*
-					var sortupdatefile = sortObject(updatefile);
-					//console.log("postsync sortupdatefile:",sortupdatefile);
-					for (var time in sortupdatefile) {
-						var item = sortupdatefile[time];
-						postfile(item);
-						emitter.emit("postfile",item);
-					}*/
 					localPostIdx.update = new Date().getTime();
 					localPostIdx.updateLocal = new Date().toLocaleString();
 					fs.writeFileSync("post/index.yaml",yaml.safeDump(localPostIdx));
@@ -695,7 +676,6 @@ function postsync(finish) {
 	  console.log('problem with request: ' + e.message);
 	});
 }
-
 
 function localsync(item) {
 	var key = exports.key;
@@ -740,7 +720,7 @@ function localsync(item) {
 	//console.log("postfile finish, key:",key);
 	exports.key = key;
 }
-//emitter.on("postupdate",updatebalance)
+
 emitter.on("postsync",postsync);
 
 // distribute event driver
@@ -952,147 +932,6 @@ function eventcallback(){
 		emitter.emit("eventloop");
 	}
 }
-
-emitter.on("postupdate",postupdate);
-function postupdate(ReverseArray){
-	//console.log("event postfile, item: ",item);
-	//console.log("event postfile, emitter: ",emitter);
-	if(ReverseArray.length == 0){
-		return;
-	}
-	var item = ReverseArray.pop();
-	console.log("update file: ",item.path+item.filename);
-	fs.writeFileSync(item.path+item.filename,item.content);
-	
-	var key = exports.key;
-	if(item.filename.substr(0,4) == "nor."){
-		var nor = yaml.safeLoad(fs.readFileSync("post/"+item.filename,'utf8'));
-		var pubkey = openpgp.key.readArmored(nor.data.pubkey).keys[0];
-		existORcreateObj(key,pubkey.primaryKey.fingerprint);
-		key[pubkey.primaryKey.fingerprint].owner = pubkey.users[0].userId.userid;
-		key[pubkey.primaryKey.fingerprint].norfilename = "post/"+item.filename;
-		existORcreate(key[pubkey.primaryKey.fingerprint],"balance");
-		emitter.emit("postfile",item);
-		emitter.emit("postupdate",ReverseArray);
-		//console.log("postfile finish, key:",key);
-		exports.key = key;
-	}
-	
-	if((item.filename.substr(item.filename.indexOf(".")+1,5) == "auto.") || (item.filename.substr(0,5) == "auto.")){
-		var auto = yaml.safeLoad(item.content);
-		var autofilename = item.filename.substr(0,item.filename.lastIndexOf(".")) + ".js" ;
-		
-		console.log("new auto account: download "+auto.data.codeurl+" and saved as "+autofilename);
-		var autoget = https.get(auto.data.codeurl,function(res) {
-			var chunk = ""; 
-			res.setEncoding('utf8');
-
-			res.on('data', function(data){
-			  chunk += data ;
-			});
-			res.on('end', function(){
-				fs.writeFileSync(autofilename,chunk);
-
-				existORcreateObj(key,auto.data.id);
-				//console.log("auto account downloaded:",key[auto.data.id]);
-				key[auto.data.id].owner = auto.cod;
-				key[auto.data.id].norfilename = item.filename;
-				existORcreate(key[auto.data.id],"balance");
-				//console.log("auto account update:",key[auto.data.id]);
-				
-				var a = require("./"+autofilename);
-				for (var event in auto.data.listener){
-					var lf = auto.data.listener[event] ;
-					//console.log("a."+lf);
-					emitter.on(event,eval("a."+lf));
-					//console.log(emitter);
-				}
-				emitter.emit("postfile",item);
-				emitter.emit("postupdate",ReverseArray);
-				//console.log("postfile finish, key:",key);
-				exports.key = key;
-			});
-		});
-	}
-	if((item.filename.substr(item.filename.indexOf(".")+1,7) == "deploy.") || (item.filename.substr(0,7) == "deploy.")){
-		var cod = yaml.safeLoad(item.content);
-		var codfilename = item.filename.substr(0,item.filename.lastIndexOf(".")) + ".js" ;
-		
-		console.log("new cod account: download "+cod.data.codeurl+" and saved as "+codfilename);
-		var codget = https.get(cod.data.codeurl,function(res) {
-			var chunk = ""; 
-			res.setEncoding('utf8');
-
-			res.on('data', function(data){
-			  chunk += data ;
-			});
-			res.on('end', function(){
-				fs.writeFileSync(codfilename,chunk);
-				
-				var a = require("./"+codfilename);
-				for (var event in cod.data.listener){
-					var lf = cod.data.listener[event] ;
-					//console.log("a."+lf);
-					emitter.on(event,eval("a."+lf));
-					console.log(emitter);
-				}
-				emitter.emit("postfile",item);
-				emitter.emit("postupdate",ReverseArray);
-				//console.log("postfile finish, key:",key);
-				//exports.key = key;
-			});
-		});
-	}
-	
-	if (item.filename.substr(0,9) == "transfer."){
-		var obj = yaml.safeLoad(item.content);
-
-		var data ;
-		if(obj.log != undefined){
-			var log = yaml.safeLoad(obj.log);
-			data = yaml.safeLoad(log.data);
-		}else if (obj.sigtype == 0){
-			data = obj.data;
-		}else if (obj.sigtype == 2){
-			data = obj.data;
-			var msg = openpgp.cleartext.readArmored(data);
-			var author = obj.author ;
-			//console("\n\ndebug:",key,author,"\n\n");
-			//console.log("\n\ndebug:",key[author],"\n\n");
-			//console.log("\n\ndebug:",key[author].norfilename,"\n\n");
-			var nor = yaml.safeLoad(fs.readFileSync(key[author].norfilename,'utf8'));
-			var pubkeys = openpgp.key.readArmored(nor.data.pubkey).keys;
-			var pubkey = pubkeys[0];
-			var result = msg.verify(pubkeys);
-			data = yaml.safeLoad(msg.text);
-		}
-		if(data.hasOwnProperty("input")) {
-			var input = data.input;
-			var id = input.id;
-			var amount = input.amount;
-			//console.log("input:\t",key,"[",id,"]",key[id])
-			existORcreateObj(key,id);
-			existORcreate(key[id],"balance");
-			key[id].balance = key[id].balance - amount;
-		}
-		
-		if(data.hasOwnProperty("output")) {
-			var output = data.output;
-			var id = output.id;
-			var amount = output.amount;
-			//console.log("output:\t",key,"[",id,"]",key[id])
-			existORcreateObj(key,id);
-			existORcreate(key[id],"balance");
-			key[id].balance = key[id].balance + amount;
-		}
-		emitter.emit("postfile",item);
-		emitter.emit("postupdate",ReverseArray);
-		//console.log("postfile finish, key:",key);
-		exports.key = key;
-	}
-	
-}
-
 
 // data management
 function deploy() {
