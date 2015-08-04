@@ -600,13 +600,13 @@ function postsync(finish) {
 				if (key === "updateLocal") continue;
 				if (key === "update") {
 					var globaltime = globalPostIdx[key];
-					console.log("globaltime",globaltime);
+					//console.log("globaltime",globaltime);
 					var localtime = localPostIdx[key];
-					console.log("localtime",localtime);
+					//console.log("localtime",localtime);
 					var nextdate = new Date(localtime+86400000);
-					console.log("nextdate",nextdate);
+					//console.log("nextdate",nextdate);
 					var nextday = nextdate.getTime()-(nextdate.getUTCHours()*60*60+nextdate.getUTCMinutes()*60+nextdate.getUTCSeconds())*1000-nextdate.getUTCMilliseconds();
-					console.log("nextday",nextday);
+					//console.log("nextday",nextday);
 					for(var t=nextday;t<=globaltime;t= t+86400000) {
 						//console.log("t=",t,new Date(t).toUTCString());
 						eventqueue[t]="newday";
@@ -763,7 +763,7 @@ function eventloop(){
 		return;
 	}
 	
-	console.log("eventqueue> min final:",min,new Date(parseInt(min)).toUTCString());
+	console.log("eventqueue> event.time:",min,new Date(parseInt(min)).toUTCString());
 	//console.log("eventqueue> eventqueue[min]:",eventqueue[min]);
 	
 	var key = exports.key;
@@ -787,6 +787,44 @@ function eventloop(){
 			emitter.emit("eventloop");
 		}
 		exports.key = key;
+	}else if (eventqueue[min].hasOwnProperty("deploy")) {
+		var item = eventqueue[min].deploy.pop();
+		fs.writeFileSync(item.path+item.filename,item.content);
+		if (eventqueue[min].deploy.length == 0) {
+			delete eventqueue[min].deploy;
+		}
+		
+		var cod = yaml.safeLoad(item.content);
+		var codfilename = item.filename.substr(0,item.filename.lastIndexOf(".")) + ".js" ;
+		
+		console.log("new cod account: download "+cod.data.codeurl+" and saved as "+codfilename);
+		var codget = https.get(cod.data.codeurl,function(res) {
+			var chunk = ""; 
+			res.setEncoding('utf8');
+
+			res.on('data', function(data){
+			  chunk += data ;
+			});
+			res.on('end', function(){
+				fs.writeFileSync(codfilename,chunk);
+				
+				var a = require("./"+codfilename);
+				for (var event in cod.data.listener){
+					var lf = cod.data.listener[event] ;
+					//console.log("a."+lf);
+					emitter.on(event,eval("a."+lf));
+					console.log(emitter);
+				}
+				
+				eventcallbackcnt = events.EventEmitter.listenerCount(emitter, "postfile");
+
+				if(eventcallbackcnt > 0){
+					emitter.emit("postfile",item,eventcallback);
+				}else{
+					emitter.emit("eventloop");
+				}
+			});
+		});
 	}else if (eventqueue[min].hasOwnProperty("auto")) {
 		var item = eventqueue[min].auto.pop();
 		fs.writeFileSync(item.path+item.filename,item.content);
@@ -900,6 +938,7 @@ function eventloop(){
 			emitter.emit("eventloop");
 		}
 	}else {
+		console.log("eventqueue> delete eventqueue[min]");
 		delete eventqueue[min];
 		emitter.emit("eventloop");
 	}
