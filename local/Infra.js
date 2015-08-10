@@ -751,6 +751,7 @@ function eventloop(){
 		fs.writeFileSync(item.path+item.filename,item.content);
 		if (eventqueue[min].nor.length == 0) {
 			delete eventqueue[min].nor;
+			console.log("eventqueue> delete eventqueue[min].nor");
 		}
 		var nor = yaml.safeLoad(item.content);
 		var pubkey = openpgp.key.readArmored(nor.data.pubkey).keys[0];
@@ -771,6 +772,7 @@ function eventloop(){
 		fs.writeFileSync(item.path+item.filename,item.content);
 		if (eventqueue[min].deploy.length == 0) {
 			delete eventqueue[min].deploy;
+			console.log("eventqueue> delete eventqueue[min].deploy");
 		}
 		
 		var cod = yaml.safeLoad(item.content);
@@ -810,6 +812,7 @@ function eventloop(){
 		fs.writeFileSync(item.path+item.filename,item.content);
 		if (eventqueue[min].auto.length == 0) {
 			delete eventqueue[min].auto;
+			console.log("eventqueue> delete eventqueue[min].auto");
 		}
 		
 		var auto = yaml.safeLoad(item.content);
@@ -834,12 +837,20 @@ function eventloop(){
 				//console.log("auto account update:",key[auto.data.id]);
 				
 				var a = require("./"+autofilename);
+				console.log("eventloop> auto.a:",a);
+				for (var event in a){
+					console.log("eventloop> event:",event);
+					console.log("eventloop> auto.a.event:",a[event]);
+					emitter.on(event,a[event]);
+				}
+				/*
 				for (var event in auto.data.listener){
 					var lf = auto.data.listener[event] ;
 					//console.log("a."+lf);
 					emitter.on(event,eval("a."+lf));
 				}
-				//console.log(emitter);
+				*/
+				console.log(emitter);
 				
 				eventcallbackcnt = events.EventEmitter.listenerCount(emitter, "auto");
 
@@ -856,6 +867,7 @@ function eventloop(){
 		fs.writeFileSync(item.path+item.filename,item.content);
 		if (eventqueue[min].transfer.length == 0) {
 			delete eventqueue[min].transfer;
+			console.log("eventqueue> delete eventqueue[min].transfer");
 		}
 		
 		var obj = yaml.safeLoad(item.content);
@@ -913,6 +925,7 @@ function eventloop(){
 		//console.log("eventqueue> newday.eventcallbackcnt:",eventcallbackcnt);
 		if(eventcallbackcnt > 0){
 			emitter.emit("newday",min,eventcallback);
+			console.log("eventqueue> delete eventqueue[min].newday");
 		}else{
 			delete eventqueue[min];
 			emitter.emit("eventloop");

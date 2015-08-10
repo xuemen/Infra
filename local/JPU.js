@@ -166,8 +166,11 @@ function createAuto(){
 	rl.question("请输入代码URL：\n", function(answer) {
 		url = answer;
 		listener = new Object();
-		listener["postfile"] = "postfile" ;
-		listener["postupdate"] = "postupdate" ;
+		listener["transfer"] = "transfer" ;
+		listener["nor"] = "nor" ;
+		listener["auto"] = "auto" ;
+		listener["deploy"] = "deploy" ;
+		
 		
 		rl.question("账号户名：\n", function(answer) {
 			if(answer.indexOf(" ") > -1){
