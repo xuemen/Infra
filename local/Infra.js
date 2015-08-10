@@ -837,10 +837,10 @@ function eventloop(){
 				//console.log("auto account update:",key[auto.data.id]);
 				
 				var a = require("./"+autofilename);
-				console.log("eventloop> auto.a:",a);
+				//console.log("eventloop> auto.a:",a);
 				for (var event in a){
-					console.log("eventloop> event:",event);
-					console.log("eventloop> auto.a.event:",a[event]);
+					console.log("eventloop> add event:",event);
+					//console.log("eventloop> auto.a.event:",a[event]);
 					emitter.on(event,a[event]);
 				}
 				/*
@@ -850,7 +850,7 @@ function eventloop(){
 					emitter.on(event,eval("a."+lf));
 				}
 				*/
-				console.log(emitter);
+				//console.log(emitter);
 				
 				eventcallbackcnt = events.EventEmitter.listenerCount(emitter, "auto");
 
@@ -1116,12 +1116,20 @@ function eventinit() {
 			var auto = yaml.safeLoad(fs.readFileSync("post/"+item, 'utf8'));
 			var autofilename = item.substr(0,item.lastIndexOf(".")) + ".js" ;
 			var a = require("./"+autofilename);
+			
+			for (var event in a){
+					//console.log("eventloop> add event:",event);
+					//console.log("eventloop> auto.a.event:",a[event]);
+					emitter.on(event,a[event]);
+			}
+			/*
 			for (var event in auto.data.listener){
 				var lf = auto.data.listener[event] ;
 				//console.log("a."+lf);
 				emitter.on(event,eval("a."+lf));
 				//console.log(emitter);
 			}
+			*/
 		}
 	});
 }
