@@ -108,15 +108,10 @@ function help() {
 }
 
 function createCOD(){
-	var url,listener,author,name;
+	var url,author,name;
 
 	rl.question("请输入代码URL：\n", function(answer) {
 		url = answer;
-		listener = new Object();
-		listener["transfer"] = "transfer" ;
-		listener["nor"] = "nor" ;
-		listener["auto"] = "auto" ;
-		listener["deploy"] = "deploy" ;
 		
 		rl.question("COD名称：\n", function(answer) {
 			name = answer;
@@ -124,7 +119,7 @@ function createCOD(){
 				author = answer;
 				//rl.close();
 
-				infra.createCOD(url,listener,author,name,function(retstr){
+				infra.createCOD(url,author,name,function(retstr){
 					console.log(retstr," 已创建.")
 				});
 			});
@@ -161,16 +156,10 @@ function createNor(){
 }
 
 function createAuto(){
-	var url,listener,author,name;
+	var url,author,name;
 
 	rl.question("请输入代码URL：\n", function(answer) {
 		url = answer;
-		listener = new Object();
-		listener["transfer"] = "transfer" ;
-		listener["nor"] = "nor" ;
-		listener["auto"] = "auto" ;
-		listener["deploy"] = "deploy" ;
-		
 		
 		rl.question("账号户名：\n", function(answer) {
 			if(answer.indexOf(" ") > -1){
@@ -186,7 +175,7 @@ function createAuto(){
 				author = answer;
 				//rl.close();
 
-				infra.createAuto(url,listener,author,name,function(retstr){
+				infra.createAuto(url,author,name,function(retstr){
 					console.log(retstr," 已创建.")
 				});
 			});

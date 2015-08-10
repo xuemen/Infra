@@ -48,7 +48,7 @@ function getCODObj(){
 	
 }
 
-function createCOD(url,listener,author,name,callback){
+function createCOD(url,author,name,callback){
 	https.get(url,function (response){
 		response.on('data',function(js){
 			console.log(js.toString());
@@ -58,7 +58,6 @@ function createCOD(url,listener,author,name,callback){
 			data.id = GetHash(js.toString(),-1);
 			data.codetype = 1;
 			data.codeurl = url;
-			data.listener = listener;
 			data.createtime = new Date().getTime();
 			data.remark = name+".deploy";
 			
@@ -206,7 +205,7 @@ function createNor(name,id,email,passphrase,callback){
 	});
 }
 
-function createAuto(url,listener,author,name,callback){
+function createAuto(url,author,name,callback){
 	https.get(url,function (res){
 		var js = ""; 
 		res.setEncoding('utf8');
@@ -221,7 +220,6 @@ function createAuto(url,listener,author,name,callback){
 			data.id = GetHash(js.toString(),-1);
 			data.codetype = 1;
 			data.codeurl = url;
-			data.listener = listener;
 			data.createtime = new Date().getTime();
 			data.remark = name+".auto";
 			
@@ -790,11 +788,9 @@ function eventloop(){
 				fs.writeFileSync(codfilename,chunk);
 				
 				var a = require("./"+codfilename);
-				for (var event in cod.data.listener){
-					var lf = cod.data.listener[event] ;
-					//console.log("a."+lf);
-					emitter.on(event,eval("a."+lf));
-					console.log(emitter);
+				for (var event in a){
+					console.log("eventloop> deploy add event:",event);
+					emitter.on(event,a[event]);
 				}
 				
 				eventcallbackcnt = events.EventEmitter.listenerCount(emitter, "deploy");
@@ -839,18 +835,10 @@ function eventloop(){
 				var a = require("./"+autofilename);
 				//console.log("eventloop> auto.a:",a);
 				for (var event in a){
-					console.log("eventloop> add event:",event);
+					console.log("eventloop> auto add event:",event);
 					//console.log("eventloop> auto.a.event:",a[event]);
 					emitter.on(event,a[event]);
 				}
-				/*
-				for (var event in auto.data.listener){
-					var lf = auto.data.listener[event] ;
-					//console.log("a."+lf);
-					emitter.on(event,eval("a."+lf));
-				}
-				*/
-				//console.log(emitter);
 				
 				eventcallbackcnt = events.EventEmitter.listenerCount(emitter, "auto");
 
@@ -1118,18 +1106,8 @@ function eventinit() {
 			var a = require("./"+autofilename);
 			
 			for (var event in a){
-					//console.log("eventloop> add event:",event);
-					//console.log("eventloop> auto.a.event:",a[event]);
 					emitter.on(event,a[event]);
 			}
-			/*
-			for (var event in auto.data.listener){
-				var lf = auto.data.listener[event] ;
-				//console.log("a."+lf);
-				emitter.on(event,eval("a."+lf));
-				//console.log(emitter);
-			}
-			*/
 		}
 	});
 }
