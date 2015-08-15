@@ -50,7 +50,13 @@ function getCODObj(){
 
 function createCOD(url,author,name,callback){
 	https.get(url,function (response){
-		response.on('data',function(js){
+		var js = ""; 
+		res.setEncoding('utf8');
+
+		res.on('data', function(data){
+			js += data ;
+		});
+		res.on('end', function(){
 			console.log(js.toString());
 			
 			var data = new Object();
