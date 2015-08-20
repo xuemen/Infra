@@ -100,9 +100,18 @@ Infra为共同体部署者提供统一的软件模块，由所有共同体的成
 2. 提交工作记录到本地
 	1. sentlocal(item,callback)
 3. 同步工作计划，即把其他人提交的工作记录同步到本地文件系统；
+	1.  postsync(finish)
+		* finish：回调函数
+	2. localsync(item)
+		* item：本地文件中解析得到的对象。
+		* 只在sentlocal结尾时调用，更新数据。
+4. 在重启软件（或操作系统）后仍然能恢复已有的[事件：处理函数]映射关系。
+	1. localindexinit()读取或建立post、put、local的index
+	2. init()重启后重建数据和事件，读取各账户并计算余额。
 
 ####分布式事件驱动机制
 1. 提交事件处理函数；
+	1. eventloop() 处理"eventloop"事件。	从eventqueue对象中取出最小key（时间in unix time），按照nor、deploy、auto、transfer、newday的顺序处理，同类事件不排序。每处理一个事件，通过eventcallback()计数器收集足够的回调后，激发一个新的eventloop事件，计数器初始化为事件listener数量。因此，意味着这个事件所有listener回调后才处理下一个。
 2. 原生提供以下事件激发：
 	1. newday：每天凌晨（北京时间8:00）发出。
 	2. nor：创建普通账户时发出。
