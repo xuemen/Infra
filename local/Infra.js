@@ -48,41 +48,44 @@ function getCODObj(){
 	
 }
 
-function createCOD(url,author,name,callback){
-	https.get(url,function (response){
-		var js = ""; 
-		res.setEncoding('utf8');
+function createCOD(cod,passphrase,callback){
+	var key = exports.key ;
+	//console.log("createcod> key[cod.deployer]:",key[cod.deployer]);
+	//console.log("createcod> key:\n",key);
+	var deployersecfile = key[cod.deployer].keyprefix + ".sec";
+	//console.log("createcod> deployersecfile:\n",fs.readFileSync(deployersecfile,'utf8'));
+	var deployerseckey = openpgp.key.readArmored(fs.readFileSync(deployersecfile,'utf8')).keys[0];
+	if(deployerseckey == undefined){
+		console.log("createcod> deployer seckey fail.");
+		callback(null);
+		return;
+	}
 
-		res.on('data', function(data){
-			js += data ;
-		});
-		res.on('end', function(){
-			console.log(js.toString());
-			
-			var data = new Object();
-			data.name = name;
-			data.id = GetHash(js.toString(),-1);
-			data.codetype = 1;
-			data.codeurl = url;
-			data.createtime = new Date().getTime();
-			data.remark = name+".deploy";
-			
-			var item = new Object();
-	
-			item.cod = name;
-			item.tag = "deploy";
-			item.author = author;
-			item.data = data;
-			item.sigtype = 0;
+	var datastr = yaml.safeDump(cod);
+	var item = new Object();
 
+	item.cod = cod.name;
+	item.id = GetHash(datastr,-1);
+	item.tag = "deploy";
+	item.author = cod.deployer;
+	item.sigtype = 2;
+	if(deployerseckey.decrypt(passphrase)){
+		openpgp.signClearMessage(deployerseckey,datastr).then(function(pgpMessage){
+			// success
+			//console.log(pgpMessage);
+			item.data = pgpMessage;
+			
 			sent(item,'POST',function (retstr){
 				if (typeof(callback) != "undefined") {
 					callback(retstr);
 				}
 			});
+		}).catch(function(error) {
+			// failure
+			console.log("签名失败！"+error);
+			callback(null);
 		});
-		
-	});
+	}
 }
 
 
@@ -773,41 +776,43 @@ function eventloop(){
 		exports.key = key;
 	}else if (eventqueue[min].hasOwnProperty("deploy")) {
 		var item = eventqueue[min].deploy.pop();
+		//console.log("eventloop> deploy.item:\n",item);
 		fs.writeFileSync(item.path+item.filename,item.content);
 		if (eventqueue[min].deploy.length == 0) {
 			delete eventqueue[min].deploy;
 			console.log("eventqueue> delete eventqueue[min].deploy");
 		}
 		
+		var data ;
 		var cod = yaml.safeLoad(item.content);
+		console.log("eventloop> deploy.cod:\n",cod);
+		if (cod.sigtype == 2){
+			data = cod.data;
+			var msg = openpgp.cleartext.readArmored(data);
+			var author = cod.author ;
+			var nor = yaml.safeLoad(fs.readFileSync(key[author].yamlfilename,'utf8'));
+			var pubkeys = openpgp.key.readArmored(nor.data.pubkey).keys;
+			var pubkey = pubkeys[0];
+			var result = msg.verify(pubkeys);
+			data = yaml.safeLoad(msg.text);
+		}
+
 		var codfilename = item.filename.substr(0,item.filename.lastIndexOf(".")) + ".js" ;
+		fs.writeFileSync(codfilename,data.listener);
 		
-		console.log("new cod account: download "+cod.data.codeurl+" and saved as "+codfilename);
-		var codget = https.get(cod.data.codeurl,function(res) {
-			var chunk = ""; 
-			res.setEncoding('utf8');
+		var a = require("./"+codfilename);
+		for (var event in a){
+			console.log("eventloop> deploy add event:",event);
+			emitter.on(event,a[event]);
+		}
+		
+		eventcallbackcnt = events.EventEmitter.listenerCount(emitter, "deploy");
 
-			res.on('data', function(data){
-			  chunk += data ;
-			});
-			res.on('end', function(){
-				fs.writeFileSync(codfilename,chunk);
-				
-				var a = require("./"+codfilename);
-				for (var event in a){
-					console.log("eventloop> deploy add event:",event);
-					emitter.on(event,a[event]);
-				}
-				
-				eventcallbackcnt = events.EventEmitter.listenerCount(emitter, "deploy");
-
-				if(eventcallbackcnt > 0){
-					emitter.emit("deploy",item,eventcallback);
-				}else{
-					emitter.emit("eventloop");
-				}
-			});
-		});
+		if(eventcallbackcnt > 0){
+			emitter.emit("deploy",item,eventcallback);
+		}else{
+			emitter.emit("eventloop");
+		}
 	}else if (eventqueue[min].hasOwnProperty("auto")) {
 		var item = eventqueue[min].auto.pop();
 		//console.log("eventqueue> auto.item:\n",item);

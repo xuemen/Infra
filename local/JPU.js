@@ -108,20 +108,27 @@ function help() {
 }
 
 function createCOD(){
-	var url,author,name;
-
-	rl.question("请输入代码URL：\n", function(answer) {
-		url = answer;
+	rl.question("请输入共同体部署文件路径：\n", function(answer) {
+		var path = answer;
 		
-		rl.question("COD名称：\n", function(answer) {
-			name = answer;
-			rl.question("创建者：\n", function(answer) {
-				author = answer;
-				//rl.close();
-
-				infra.createCOD(url,author,name,function(retstr){
+		var cod = yaml.safeLoad(fs.readFileSync(path, 'utf8'));
+		//console.log("createCOD> cod\n",cod);
+		var listener = fs.readFileSync(cod.listener, 'utf8');
+		//console.log("createCOD> listener\n",listener);
+		fs.unlink(path);
+		fs.unlink(cod.listener);
+		cod.listener = listener;
+		
+		rl.question("请输入部署者私钥口令：\n", function(answer) {
+			var passphrase = answer;
+						
+			infra.createCOD(cod,passphrase,function(retstr){
+				if (retstr == null){
+					console.log("createCOD() fail.")
+				}else {
 					console.log(retstr," 已创建.")
-				});
+				}
+				
 			});
 		});
 	});
