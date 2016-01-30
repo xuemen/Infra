@@ -12,6 +12,13 @@ if (!fs.existsSync("post")) {
 };
 if (fs.existsSync("post/index.yaml")) {
 	PostIdx = yaml.safeLoad(fs.readFileSync('post/index.yaml', 'utf8'));
+	// check the old version files, and transfer to new version
+	for (var key in PostIdx) {
+		//console.log("key:\t"+key);
+		if (key === "updateLocal") continue;
+		if (key === "update") continue;
+		
+		}
 }else {
 	PostIdx = new Object();
 	PostIdx.update = new Date().toLocaleString();
