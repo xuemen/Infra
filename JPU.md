@@ -2,7 +2,7 @@
 Joint Product Unit
 
 ###定位
-JPU的使命是为下一代共同体提供基础设施（infra）及生态环境。JPU本身也借助infra部署。
+JPU的使命是为下一代共同体提供生态环境，包括基础设施（infra）以及统一数学模型。JPU本身也借助infra部署。
 
 ###特点
 ####共同体
