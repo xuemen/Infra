@@ -1,0 +1,2 @@
+create dir:	 post
+create dir:	 local

@@ -1,0 +1,28 @@
+{
+  "name": "infraserver",
+  "version": "0.0.1",
+  "description": "the data server of infra",
+  "main": "Infra.data.js",
+  "dependencies": {
+    "js-yaml": "^3.3.1"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/xuemen/infra.git"
+  },
+  "keywords": [
+    "JPU",
+    "Infra",
+    "server"
+  ],
+  "author": "Huang Yonggang",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/xuemen/infra/issues"
+  },
+  "homepage": "https://github.com/xuemen/infra#readme"
+}

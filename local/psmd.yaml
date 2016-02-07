@@ -1,0 +1,4 @@
+name: PSMD
+deployer: d4daa038556e2fc2b01f55036f4ff2d2e8c2fc78
+modelurl: https://github.com/xuemen/PSMD/blob/master/com.md
+listener: PSMD.js

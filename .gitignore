@@ -8,3 +8,10 @@
 /local/npm.cmd
 /local/node_modules
 /local/node.exe
+/node/node_modules
+/local/post
+/local/local
+/server/put
+/server/post
+/local/*.sec
+/local/*.pub
