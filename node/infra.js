@@ -5,7 +5,13 @@ var yaml = require('js-yaml');
 
 var log,cfg ;
 init();
-writedata("/huangyg/itw/admin/","test","log")
+//writedata("/huangyg/itw/admin/","test","log")
+for (var event in yaml){
+	console.log("yaml> var:",event);
+}
+
+
+
 // cod
 
 // jt
@@ -15,7 +21,9 @@ writedata("/huangyg/itw/admin/","test","log")
 
 
 // event
-function doevent(){
+var evetnqueue;
+
+function eventloop(){
 	
 }
 
