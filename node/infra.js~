@@ -50,10 +50,10 @@ function sendevent(k,v){
 function readevent(k) {
 	if (outqueue[k] != undefined){
 		console.log("found in outqueue.");
-		return outqueue[k];
+		return outqueque[k];
 	} else if (inqueue[k] != undefined){
 		console.log("found in inqueue.");
-		return inqueue[k];
+		return inqueque[k];
 	} else if (done[k] != undefined){
 		console.log("found in done.");
 		return done[k];
