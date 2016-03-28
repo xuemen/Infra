@@ -90,3 +90,8 @@ Infra项目从有中心方案启动，每当新方案的去中心化程度更高
 4. 接受cod部署者签名的cod成员cod.memberid.person.yaml。
 5. 接受testnet中表现良好的成员，具体规则待定。
 6. 其它数据，由合法author签名即可接受。
+
+
+
+1. 本作品版权归[黄勇刚](mailto:huangyg@mars22.com)所有。
+2. 本作品采用<a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">知识共享署名 4.0 国际许可协议</a>进行许可。  
