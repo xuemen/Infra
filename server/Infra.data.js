@@ -40,7 +40,7 @@ var server = http.createServer(function (req, res) {
 			console.log('BODY length: ' + chunk.length);
 			try {
 				var body = yaml.safeLoad(chunk);
-			}catch(err){
+			} catch(err) {
 				res.writeHead(400, {'Content-Type': 'text/plain'});
 				res.write( "Bad request");
 				res.end();
@@ -93,9 +93,9 @@ var server = http.createServer(function (req, res) {
 		} 
 		if(req.method == 'PUT') {
 			console.log('BODY: ' + chunk);
-			try{
+			try {
 				var body = yaml.safeLoad(chunk);
-			}catch(err){
+			} catch(err) {
 				res.writeHead(400, {'Content-Type': 'text/plain'});
 				res.write( "Bad request");
 				res.end();
