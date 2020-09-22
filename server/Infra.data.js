@@ -140,6 +140,7 @@ var server = http.createServer(function (req, res) {
 			});
 		} 
 		if(req.method == 'GET') {
+			req.url = req.url.replace(/(\.\.\/?)/g, '');
 			var pathname = url.parse(req.url).pathname;
 			var realPath = pathname.substring(1);
 			console.log(realPath);
