@@ -38,8 +38,15 @@ var server = http.createServer(function (req, res) {
 		if(req.method == 'POST') {
 			console.log('BODY: ' + chunk);
 			console.log('BODY length: ' + chunk.length);
-			var body = yaml.load(chunk);
-			
+			try {
+				var body = yaml.safeLoad(chunk);
+			} catch(err) {
+				res.writeHead(400, {'Content-Type': 'text/plain'});
+				res.write( "Bad request");
+				res.end();
+				console.log("Problem loading yaml");
+				return
+			}
 			if (body.hasOwnProperty("cod")) {
 				key = body.cod + "." + body.tag + "." + body.author;
 			} else {
@@ -86,8 +93,16 @@ var server = http.createServer(function (req, res) {
 		} 
 		if(req.method == 'PUT') {
 			console.log('BODY: ' + chunk);
-			var body = yaml.load(chunk);
-			
+			try {
+				var body = yaml.safeLoad(chunk);
+			} catch(err) {
+				res.writeHead(400, {'Content-Type': 'text/plain'});
+				res.write( "Bad request");
+				res.end();
+				console.log("Problem loading yaml");
+				return
+			}
+
 			var filename;
 			if (body.hasOwnProperty("cod")) {
 				filename = body.cod + "." + body.tag + "." + body.author ;
@@ -125,6 +140,7 @@ var server = http.createServer(function (req, res) {
 			});
 		} 
 		if(req.method == 'GET') {
+			req.url = req.url.replace(/(\.\.\/?)/g, '');
 			var pathname = url.parse(req.url).pathname;
 			var realPath = pathname.substring(1);
 			console.log(realPath);
